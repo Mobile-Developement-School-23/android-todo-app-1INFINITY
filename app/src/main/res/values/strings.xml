@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Todo</string>
+    <string name="item_text">Item text</string>
+    <string name="content_description_task_info">Get additional info about task</string>
 </resources>

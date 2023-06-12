@@ -15,7 +15,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
         return mutableListOf(
             TodoItem(
                 id = "1",
-                text = "Buy groceries",
+                text = "Buy groceries:\nMilk\nBread\nEggs\nBeacon",
                 importance = Importance.HIGH,
                 deadlineTimestamp = System.currentTimeMillis() + 86400000, // Set deadline for tomorrow
                 isComplete = false,
