@@ -8,8 +8,9 @@ import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 
 class TodoItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-    private val isCompleteCheckBox: CheckBox = itemView.findViewById(R.id.cbIsComplete)
-    private val todoText: TextView = itemView.findViewById(R.id.tvTodoText)
+    val root = itemView
+    val isCompleteCheckBox: CheckBox = itemView.findViewById(R.id.cbIsComplete)
+    val todoText: TextView = itemView.findViewById(R.id.tvTodoText)
 
     fun onBind(todoItem: TodoItem) {
         isCompleteCheckBox.isChecked = todoItem.isComplete

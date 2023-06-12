@@ -10,6 +10,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
     override fun addItem(item: TodoItem) = todoItems.add(item)
 
     override fun getAllItems() = todoItems.toList()
+    override fun getItemById(id: String) = todoItems.firstOrNull { it.id == id }
 
     private fun generateItems(): MutableList<TodoItem> {
         return mutableListOf(

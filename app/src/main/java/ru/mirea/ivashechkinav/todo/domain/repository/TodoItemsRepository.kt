@@ -7,4 +7,6 @@ interface TodoItemsRepository {
     fun addItem(item: TodoItem): Boolean
 
     fun getAllItems(): List<TodoItem>
+
+    fun getItemById(id: String): TodoItem?
 }

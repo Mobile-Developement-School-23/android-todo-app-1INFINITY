@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.data.repository.TodoItemsRepositoryImpl
 import ru.mirea.ivashechkinav.todo.databinding.FragmentMainBinding
 import ru.mirea.ivashechkinav.todo.presentation.adapters.TodoAdapter
@@ -30,7 +31,14 @@ class MainFragment : Fragment() {
 
     private fun recyclerViewInit() {
         todoRecyclerView = binding.rwTodoList
-        val todoAdapter = TodoAdapter()
+        val todoAdapter = TodoAdapter(object : TodoAdapter.Listener {
+            override fun OnItemClicked(todoItem: TodoItem) {
+                val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate(
+                    taskId = todoItem.id
+                )
+                findNavController().navigate(action)
+            }
+        })
         val layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
         todoRecyclerView.adapter = todoAdapter
@@ -39,7 +47,7 @@ class MainFragment : Fragment() {
     }
 
     private fun floatingButtonInit() {
-        val action = MainFragmentDirections.actionMainFragmentToTaskFragment()
+        val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate()
         binding.floatingActionButton.setOnClickListener {
             findNavController().navigate(action)
         }
