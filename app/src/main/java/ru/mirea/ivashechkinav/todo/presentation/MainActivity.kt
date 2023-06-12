@@ -1,7 +1,8 @@
-package ru.mirea.ivashechkinav.todo
+package ru.mirea.ivashechkinav.todo.presentation
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import ru.mirea.ivashechkinav.todo.R
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
