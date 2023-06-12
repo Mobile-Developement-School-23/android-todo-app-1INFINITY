@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingHorizontal="8dp"
+    tools:context=".presentation.fragments.MainFragment">
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rwTodoList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="18dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tvCountDone"
+        tools:itemCount="10"
+        tools:listitem="@layout/item_container_todo" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/floatingActionButton"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="40dp"
+        android:clickable="true"
+        android:contentDescription="@string/create_new_task"
+        android:src="@drawable/add"
+        app:backgroundTint="@color/color_light_blue"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@color/color_light_white" />
+
+    <TextView
+        android:id="@+id/tvMyDoings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="52dp"
+        android:layout_marginTop="82dp"
+        android:text="@string/my_tasks"
+        android:textColor="@color/label_light_primary"
+        android:textSize="32sp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tvCountDone"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/done_count"
+        android:textColor="@android:color/tertiary_text_light"
+        android:textSize="16sp"
+        app:layout_constraintStart_toStartOf="@+id/tvMyDoings"
+        app:layout_constraintTop_toBottomOf="@+id/tvMyDoings" />
+
+    <ImageView
+        android:id="@+id/imageView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:src="@drawable/ic_visibility_on"
+        app:tint="@color/color_light_blue"
+        app:layout_constraintBottom_toBottomOf="@+id/tvCountDone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/tvCountDone"
+        android:contentDescription="@string/hide_visibility_image_button" />
+</androidx.constraintlayout.widget.ConstraintLayout>

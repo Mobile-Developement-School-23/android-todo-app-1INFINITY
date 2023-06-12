@@ -2,4 +2,16 @@
     <string name="app_name">Todo</string>
     <string name="item_text">Item text</string>
     <string name="content_description_task_info">Get additional info about task</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="save_string">Сохранить</string>
+    <string name="close_add_return_to_main_screen">Close add return to main screen</string>
+    <string name="todo_item_text_hint">Что надо сделать…</string>
+    <string name="importance_text">Важность</string>
+    <string name="delete_string">Удалить</string>
+    <string name="create_new_task">Create new task</string>
+    <string name="done_count">Выполнено - 0</string>
+    <string name="done_before">Сделать до</string>
+    <string name="delete_image_button">Delete image button</string>
+    <string name="my_tasks">Мои дела</string>
+    <string name="hide_visibility_image_button">Hide visibility image button</string>
 </resources>
