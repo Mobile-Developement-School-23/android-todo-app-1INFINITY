@@ -3,6 +3,8 @@ package ru.mirea.ivashechkinav.todo.presentation.adapters
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.AsyncListDiffer
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
@@ -11,7 +13,11 @@ class TodoAdapter(
     private val listener: Listener,
 ) : RecyclerView.Adapter<TodoItemViewHolder>(), View.OnClickListener {
 
-    var todoItems = listOf<TodoItem>()
+    private val differ: AsyncListDiffer<TodoItem> = AsyncListDiffer(this, DiffCallback())
+
+    fun submitList(list: List<TodoItem>) = differ.submitList(list)
+
+    fun currentList(): List<TodoItem> = differ.currentList
 
     interface Listener {
         fun OnItemClicked(todoItem: TodoItem)
@@ -19,7 +25,7 @@ class TodoAdapter(
 
     override fun onClick(v: View) {
         val itemPos = v.tag as Int
-        val todoItem = todoItems[itemPos]
+        val todoItem = currentList()[itemPos]
         when(v.id){
             R.id.tvTodoText -> listener.OnItemClicked(todoItem)
             else -> listener.OnItemClicked(todoItem)
@@ -39,13 +45,20 @@ class TodoAdapter(
         return vh
     }
 
-    override fun getItemCount() = todoItems.size
+    override fun getItemCount() = currentList().size
 
     override fun onBindViewHolder(holder: TodoItemViewHolder, position: Int) {
-        holder.onBind(todoItems[position])
+        holder.onBind(currentList()[position])
         holder.root.tag = position
         holder.todoText.tag = position
     }
 
+    private class DiffCallback : DiffUtil.ItemCallback<TodoItem>() {
+        override fun areItemsTheSame(oldItem: TodoItem, newItem: TodoItem) =
+            oldItem.id == newItem.id
+
+        override fun areContentsTheSame(oldItem: TodoItem, newItem: TodoItem) =
+            oldItem == newItem
+    }
 
 }

@@ -43,7 +43,7 @@ class MainFragment : Fragment() {
             LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
         todoRecyclerView.adapter = todoAdapter
         todoRecyclerView.layoutManager = layoutManager
-        todoAdapter.todoItems = todoItemsRepository.getAllItems()
+        todoAdapter.submitList(todoItemsRepository.getAllItems())
     }
 
     private fun floatingButtonInit() {
