@@ -6,11 +6,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.data.repository.TodoItemsRepositoryImpl
 import ru.mirea.ivashechkinav.todo.databinding.FragmentMainBinding
+import ru.mirea.ivashechkinav.todo.presentation.adapters.SwipeTodoItemCallback
 import ru.mirea.ivashechkinav.todo.presentation.adapters.TodoAdapter
 
 class MainFragment : Fragment() {
@@ -25,6 +27,7 @@ class MainFragment : Fragment() {
     ): View? {
         binding = FragmentMainBinding.inflate(inflater, container, false)
         recyclerViewInit()
+        initRecyclerViewSwipes()
         floatingButtonInit()
         return binding.root
     }
@@ -51,5 +54,22 @@ class MainFragment : Fragment() {
         binding.floatingActionButton.setOnClickListener {
             findNavController().navigate(action)
         }
+    }
+
+    private fun initRecyclerViewSwipes() {
+        val swipeCallback = SwipeTodoItemCallback(
+            onSwipeLeft = { position ->
+                // Обработка свайпа влево
+                // Выполните необходимые действия для позиции элемента
+            },
+            onSwipeRight = { position ->
+                // Обработка свайпа вправо
+                // Выполните необходимые действия для позиции элемента
+            },
+            applicationContext = activity!!.baseContext
+        )
+
+        val itemTouchHelper = ItemTouchHelper(swipeCallback)
+        itemTouchHelper.attachToRecyclerView(binding.rwTodoList)
     }
 }
