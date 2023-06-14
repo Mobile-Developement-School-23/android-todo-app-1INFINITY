@@ -27,7 +27,6 @@ class MainFragment : Fragment() {
     ): View? {
         binding = FragmentMainBinding.inflate(inflater, container, false)
         recyclerViewInit()
-        initRecyclerViewSwipes()
         floatingButtonInit()
         return binding.root
     }
@@ -47,6 +46,7 @@ class MainFragment : Fragment() {
         todoRecyclerView.adapter = todoAdapter
         todoRecyclerView.layoutManager = layoutManager
         todoAdapter.submitList(todoItemsRepository.getAllItems())
+        initRecyclerViewSwipes(todoAdapter)
     }
 
     private fun floatingButtonInit() {
@@ -56,15 +56,19 @@ class MainFragment : Fragment() {
         }
     }
 
-    private fun initRecyclerViewSwipes() {
+    private fun initRecyclerViewSwipes(adapter: TodoAdapter) {
         val swipeCallback = SwipeTodoItemCallback(
             onSwipeLeft = { position ->
-                // Обработка свайпа влево
-                // Выполните необходимые действия для позиции элемента
+                val itemId = adapter.getItemAtPosition(position).id
+                todoItemsRepository.deleteItemById(itemId)
+                adapter.submitList(todoItemsRepository.getAllItems())
             },
             onSwipeRight = { position ->
-                // Обработка свайпа вправо
-                // Выполните необходимые действия для позиции элемента
+                val itemChecked = adapter
+                    .getItemAtPosition(position)
+                    .copy(isComplete = true)
+                todoItemsRepository.updateItem(itemChecked)
+                adapter.submitList(todoItemsRepository.getAllItems())
             },
             applicationContext = activity!!.baseContext
         )

@@ -9,7 +9,28 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
 
     override fun addItem(item: TodoItem) = todoItems.add(item)
 
+    override fun deleteItemById(id: String) = todoItems.removeIf { it.id == id }
+
+    override fun updateItem(item: TodoItem): Boolean {
+        val itemToUpdate = todoItems.find {it.id == item.id}
+
+        itemToUpdate?.let {
+            val updatedItem = it.copy(
+                text = item.text,
+                importance = item.importance,
+                deadlineTimestamp = item.deadlineTimestamp,
+                isComplete = item.isComplete,
+                changeTimestamp = System.currentTimeMillis()
+            )
+            val indexToUpdate = todoItems.indexOf(itemToUpdate)
+            todoItems[indexToUpdate] = updatedItem
+            return true
+        }
+        return false
+    }
+
     override fun getAllItems() = todoItems.toList()
+
     override fun getItemById(id: String) = todoItems.firstOrNull { it.id == id }
 
     private fun generateItems(): MutableList<TodoItem> {
