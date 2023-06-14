@@ -53,12 +53,17 @@
     </FrameLayout>
 
     <FrameLayout
-        android:id="@+id/frameLayout2"
+        android:id="@+id/flImportanceMenu"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="28dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/frameLayout">
+
+        <View
+            android:id="@+id/vPopupMenuAnchor"
+            android:layout_width="0dp"
+            android:layout_height="0dp" />
 
         <TextView
             android:id="@+id/tvImportance"
@@ -67,43 +72,48 @@
             android:text="@string/importance_text"
             android:textColor="@color/label_light_primary" />
 
-        <Spinner
-            android:id="@+id/spImportance"
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/tvImportanceValue"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="22dp" />
+            android:layout_marginTop="22dp"
+            android:text="Нет"
+            android:textColor="@color/label_light_tertiary" />
+
     </FrameLayout>
 
     <View
         android:id="@+id/view"
         android:layout_width="match_parent"
         android:layout_height="1dp"
+        android:layout_marginTop="16dp"
         android:background="@color/support_light_separator"
-        app:layout_constraintTop_toBottomOf="@+id/frameLayout2" />
+        app:layout_constraintTop_toBottomOf="@+id/flImportanceMenu"
+        tools:layout_editor_absoluteX="16dp" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/constraintDeadline"
         android:layout_width="match_parent"
-        android:layout_height="72dp"
+        android:layout_height="wrap_content"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/frameLayout2">
+        app:layout_constraintTop_toBottomOf="@+id/view">
 
         <Switch
             android:id="@+id/swDeadline"
             android:layout_width="wrap_content"
             android:layout_height="48dp"
-            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintBottom_toBottomOf="@+id/tvDeadlineDate"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="@+id/tvDeadline" />
 
         <TextView
             android:id="@+id/tvDeadline"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:text="@string/done_before"
             android:textColor="@color/label_light_primary"
-            app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -114,14 +124,14 @@
             android:textColor="@color/color_light_blue"
             app:layout_constraintStart_toStartOf="@+id/tvDeadline"
             app:layout_constraintTop_toBottomOf="@+id/tvDeadline"
-            tools:text="1 января 1972" />
+            tools:text="1 января 1970" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <View
         android:id="@+id/view2"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginTop="50dp"
+        android:layout_marginTop="40dp"
         android:background="@color/support_light_separator"
         app:layout_constraintTop_toBottomOf="@+id/constraintDeadline"
         tools:layout_editor_absoluteX="16dp" />

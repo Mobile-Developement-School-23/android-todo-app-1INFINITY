@@ -14,4 +14,7 @@
     <string name="delete_image_button">Delete image button</string>
     <string name="my_tasks">Мои дела</string>
     <string name="hide_visibility_image_button">Hide visibility image button</string>
+    <string name="popup_first_option">Нет</string>
+    <string name="popup_second_option">Низкий</string>
+    <string name="popup_third_option">!! Высокий</string>
 </resources>
