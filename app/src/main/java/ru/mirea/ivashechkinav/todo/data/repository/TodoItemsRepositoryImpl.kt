@@ -46,10 +46,10 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
             ),
             TodoItem(
                 id = "2",
-                text = "Go for a run",
+                text = "Buy groceries:\nMilk\nBread\nEggs\nBeacon",
                 importance = Importance.COMMON,
                 deadlineTimestamp = System.currentTimeMillis() + 432000000, // Set deadline for a week later
-                isComplete = false,
+                isComplete = true,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
             ),
@@ -58,7 +58,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 text = "Read a book",
                 importance = Importance.LOW,
                 deadlineTimestamp = System.currentTimeMillis() + 2592000000, // Set deadline for a month later
-                isComplete = false,
+                isComplete = true,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
             ),

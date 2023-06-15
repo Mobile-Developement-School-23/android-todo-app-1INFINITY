@@ -34,13 +34,20 @@ class MainFragment : Fragment() {
     private fun recyclerViewInit() {
         todoRecyclerView = binding.rwTodoList
         val todoAdapter = TodoAdapter(object : TodoAdapter.Listener {
-            override fun OnItemClicked(todoItem: TodoItem) {
+            override fun onItemClicked(todoItem: TodoItem) {
                 val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate(
                     taskId = todoItem.id
                 )
                 findNavController().navigate(action)
             }
-        })
+
+            override fun onItemChecked(todoItem: TodoItem) {
+                val itemChecked = todoItem
+                    .copy(isComplete = !todoItem.isComplete)
+                todoItemsRepository.updateItem(itemChecked)
+            }
+        },
+        applicationContext = activity!!.applicationContext)
         val layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
         todoRecyclerView.adapter = todoAdapter

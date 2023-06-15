@@ -1,5 +1,6 @@
 package ru.mirea.ivashechkinav.todo.presentation.fragments
 
+import android.app.DatePickerDialog
 import android.os.Bundle
 import android.text.SpannableString
 import android.text.style.ForegroundColorSpan
@@ -17,6 +18,8 @@ import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.data.repository.TodoItemsRepositoryImpl
 import ru.mirea.ivashechkinav.todo.databinding.FragmentTaskBinding
+import java.text.SimpleDateFormat
+import java.util.*
 
 class TaskFragment : Fragment() {
 
@@ -32,6 +35,7 @@ class TaskFragment : Fragment() {
         loadArgs()
         initButtons()
         initPopUpMenu()
+        initDatePicker()
         return binding.root
     }
 
@@ -72,6 +76,26 @@ class TaskFragment : Fragment() {
             }
             //Set importance to item
             true
+        }
+    }
+    private fun initDatePicker() {
+        val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale.getDefault())
+        binding.constrainLayoutDatePicker.setOnClickListener {
+            val c = Calendar.getInstance()
+            val year = c.get(Calendar.YEAR)
+            val month = c.get(Calendar.MONTH)
+            val day = c.get(Calendar.DAY_OF_MONTH)
+
+
+            val dpd = DatePickerDialog(requireActivity(), { view, year, monthOfYear, dayOfMonth ->
+                c.set(Calendar.YEAR, year)
+                c.set(Calendar.MONTH, monthOfYear)
+                c.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                binding.tvDeadlineDate.text = dateFormat.format(c.time)
+
+            }, year, month, day)
+
+            dpd.show()
         }
     }
 }
