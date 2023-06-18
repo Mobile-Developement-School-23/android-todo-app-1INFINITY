@@ -52,11 +52,12 @@
 
     </FrameLayout>
 
-    <FrameLayout
+    <LinearLayout
         android:id="@+id/flImportanceMenu"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="28dp"
+        android:orientation="vertical"
+        android:paddingTop="28dp"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/frameLayout">
 
@@ -76,11 +77,9 @@
             android:id="@+id/tvImportanceValue"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
             android:text="Нет"
             android:textColor="@color/label_light_tertiary" />
-
-    </FrameLayout>
+    </LinearLayout>
 
     <View
         android:id="@+id/view"
