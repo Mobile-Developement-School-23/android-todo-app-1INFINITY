@@ -5,10 +5,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.data.repository.TodoItemsRepositoryImpl
 import ru.mirea.ivashechkinav.todo.databinding.FragmentMainBinding
@@ -20,7 +22,7 @@ class MainFragment : Fragment() {
     private lateinit var binding: FragmentMainBinding
     private lateinit var todoRecyclerView: RecyclerView
     private val todoItemsRepository = TodoItemsRepositoryImpl()
-
+    private lateinit var todoAdapter: TodoAdapter
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -28,26 +30,39 @@ class MainFragment : Fragment() {
         binding = FragmentMainBinding.inflate(inflater, container, false)
         recyclerViewInit()
         floatingButtonInit()
+        initTodoListObserve()
         return binding.root
+    }
+
+    private fun initTodoListObserve() {
+        lifecycleScope.launch {
+            todoItemsRepository.getTodoItemsFlow().collect {
+                todoAdapter.submitList(it)
+            }
+        }
     }
 
     private fun recyclerViewInit() {
         todoRecyclerView = binding.rwTodoList
-        val todoAdapter = TodoAdapter(object : TodoAdapter.Listener {
-            override fun onItemClicked(todoItem: TodoItem) {
-                val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate(
-                    taskId = todoItem.id
-                )
-                findNavController().navigate(action)
-            }
+        todoAdapter = TodoAdapter(
+            object : TodoAdapter.Listener {
+                override fun onItemClicked(todoItem: TodoItem) {
+                    val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate(
+                        taskId = todoItem.id
+                    )
+                    findNavController().navigate(action)
+                }
 
-            override fun onItemChecked(todoItem: TodoItem) {
-                val itemChecked = todoItem
-                    .copy(isComplete = !todoItem.isComplete)
-                todoItemsRepository.updateItem(itemChecked)
-            }
-        },
-        applicationContext = activity!!.applicationContext)
+                override fun onItemChecked(todoItem: TodoItem) {
+                    val itemChecked = todoItem
+                        .copy(isComplete = !todoItem.isComplete)
+                    lifecycleScope.launch {
+                        todoItemsRepository.updateItem(itemChecked)
+                    }
+                }
+            },
+            applicationContext = activity!!.applicationContext
+        )
         val layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
         todoRecyclerView.adapter = todoAdapter
@@ -67,15 +82,18 @@ class MainFragment : Fragment() {
         val swipeCallback = SwipeTodoItemCallback(
             onSwipeLeft = { position ->
                 val itemId = adapter.getItemAtPosition(position).id
-                todoItemsRepository.deleteItemById(itemId)
-                adapter.submitList(todoItemsRepository.getAllItems())
+                lifecycleScope.launch {
+                    todoItemsRepository.deleteItemById(itemId)
+                }
             },
             onSwipeRight = { position ->
-                val itemChecked = adapter
+                val oldItem = adapter
                     .getItemAtPosition(position)
-                    .copy(isComplete = true)
-                todoItemsRepository.updateItem(itemChecked)
-                adapter.submitList(todoItemsRepository.getAllItems())
+                val itemChecked = oldItem
+                    .copy(isComplete = !oldItem.isComplete)
+                lifecycleScope.launch {
+                    todoItemsRepository.updateItem(itemChecked)
+                }
             },
             applicationContext = activity!!.baseContext
         )

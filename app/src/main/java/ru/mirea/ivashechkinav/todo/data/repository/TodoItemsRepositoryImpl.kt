@@ -1,5 +1,12 @@
 package ru.mirea.ivashechkinav.todo.data.repository
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
@@ -7,11 +14,25 @@ import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 class TodoItemsRepositoryImpl: TodoItemsRepository {
     private val todoItems: MutableList<TodoItem> = generateItems()
 
-    override fun addItem(item: TodoItem) = todoItems.add(item)
+    private val todoItemsFlow: MutableStateFlow<List<TodoItem>> = MutableStateFlow(todoItems.toList())
 
-    override fun deleteItemById(id: String) = todoItems.removeIf { it.id == id }
+    override suspend fun addItem(item: TodoItem) = withContext(Dispatchers.IO) {
+        val result = todoItems.add(item)
+        todoItemsFlow.value = todoItems.toList()
+        return@withContext result
+    }
 
-    override fun updateItem(item: TodoItem): Boolean {
+    override suspend fun deleteItemById(id: String) = withContext(Dispatchers.IO) {
+        val result = todoItems.removeIf { it.id == id }
+        todoItemsFlow.value = todoItems.toList()
+        return@withContext result
+    }
+
+    override fun getTodoItemsFlow(): Flow<List<TodoItem>> {
+        return todoItemsFlow.asStateFlow()
+    }
+
+    override suspend fun updateItem(item: TodoItem) = withContext(Dispatchers.IO) {
         val itemToUpdate = todoItems.find {it.id == item.id}
 
         itemToUpdate?.let {
@@ -24,9 +45,10 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
             )
             val indexToUpdate = todoItems.indexOf(itemToUpdate)
             todoItems[indexToUpdate] = updatedItem
-            return true
+            todoItemsFlow.value = todoItems.toList()
+            return@withContext true
         }
-        return false
+        return@withContext false
     }
 
     override fun getAllItems() = todoItems.toList()

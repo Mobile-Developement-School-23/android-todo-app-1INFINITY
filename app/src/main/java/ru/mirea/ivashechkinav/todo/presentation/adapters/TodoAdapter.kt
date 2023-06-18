@@ -21,7 +21,7 @@ class TodoAdapter(
 
     fun currentList(): List<TodoItem> = differ.currentList
 
-    fun getItemAtPosition(position: Int): TodoItem{
+    fun getItemAtPosition(position: Int): TodoItem {
         return currentList()[position]
     }
 
@@ -33,11 +33,12 @@ class TodoAdapter(
     override fun onClick(v: View) {
         val itemPos = v.tag as Int
         val todoItem = currentList()[itemPos]
-        when(v.id){
-            R.id.cbIsComplete -> listener.onItemChecked(todoItem)
+        when (v.id) {
+            R.id.cbIsComplete ->  listener.onItemChecked(todoItem)
             else -> listener.onItemClicked(todoItem)
         }
     }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TodoItemViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
         val vh = TodoItemViewHolder(
@@ -49,6 +50,7 @@ class TodoAdapter(
             applicationContext
         )
         vh.root.setOnClickListener(this)
+        vh.isCompleteCheckBox.setOnClickListener(this)
         return vh
     }
 
