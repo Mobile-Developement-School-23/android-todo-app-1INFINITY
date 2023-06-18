@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/mainFragment"
-        android:name="ru.mirea.ivashechkinav.todo.presentation.fragments.MainFragment"
+        android:name="ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainFragment"
         android:label="fragment_main"
         tools:layout="@layout/fragment_main" >
         <action
@@ -23,7 +23,7 @@
     </fragment>
     <fragment
         android:id="@+id/taskFragment"
-        android:name="ru.mirea.ivashechkinav.todo.presentation.fragments.TaskFragment"
+        android:name="ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskFragment"
         android:label="fragment_task"
         tools:layout="@layout/fragment_task" >
         <argument

@@ -1,4 +1,4 @@
-package ru.mirea.ivashechkinav.todo.presentation.fragments
+package ru.mirea.ivashechkinav.todo.presentation.fragments.task
 
 import android.app.DatePickerDialog
 import android.os.Bundle
@@ -11,25 +11,30 @@ import android.view.ViewGroup
 import android.widget.PopupMenu
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
-import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.Importance
-import ru.mirea.ivashechkinav.todo.data.models.TodoItem
-import ru.mirea.ivashechkinav.todo.data.repository.TodoItemsRepositoryImpl
 import ru.mirea.ivashechkinav.todo.databinding.FragmentTaskBinding
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 import ru.mirea.ivashechkinav.todo.presentation.models.TodoItemUI
+import ru.mirea.ivashechkinav.todo.presentation.utils.textChanges
 import java.text.SimpleDateFormat
 import java.util.*
 
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class TaskFragment : Fragment() {
 
+    private val vm: TaskViewModel by viewModels { TaskViewModel.Factory }
     private lateinit var binding: FragmentTaskBinding
     private val args: TaskFragmentArgs by navArgs()
     private lateinit var repository: TodoItemsRepository
@@ -44,83 +49,75 @@ class TaskFragment : Fragment() {
 
         repository = (requireActivity().application as App).repository
 
+
         loadArgs()
         initEditTextObserve()
         initButtons()
         initPopUpMenu()
         initDateBlock()
+        initViewModelObservers()
         return binding.root
     }
 
-    private fun loadArgs() {
-        val todoItem = repository.getItemById(args.taskId ?: return) ?: return
+    private fun initViewModelObservers() {
+        lifecycleScope.launch {
+            vm.uiState.collectLatest { state ->
+                setDeadlineDate(state.deadlineTimestamp)
+                changeImportanceValue(state.importance)
+                changeDeleteBlockColor(state)
 
-        binding.swDeadline.isChecked = false
-        todoItem.deadlineTimestamp?.let {
-            binding.swDeadline.isChecked = true
-            binding.tvDeadlineDate.text = dateFormat.format(it)
-            todoItemUI.deadlineTimestamp = it
+                if (state.viewState == TaskViewModel.FragmentViewState.Loading)
+                    binding.edTodoItemText.setText(state.text)
+            }
         }
-        todoItemUI.id = todoItem.id
+        lifecycleScope.launch {
+            vm.effect.collect {
+                when (it) {
+                    is TaskViewModel.EffectUi.ToBackFragment -> findNavController().popBackStack()
+                    is TaskViewModel.EffectUi.ShowDatePicker -> showDatePicker()
+                }
+            }
+        }
+    }
 
-        todoItemUI.text = todoItem.text
-        binding.edTodoItemText.setText(todoItem.text)
-
-        todoItemUI.importance = todoItem.importance
-        todoItemUI.isComplete = todoItem.isComplete
-
+    private fun loadArgs() {
+        args.taskId?.let {
+            vm.setEvent(
+                TaskViewModel.EventUi.OnTodoItemIdLoaded(it)
+            )
+        }
     }
 
     private fun initEditTextObserve() {
-        changeDeleteBlockColor(todoItemUI.text ?: "")
-        binding.edTodoItemText.addTextChangedListener {
-            val text = it.toString()
-            todoItemUI.text = text
-            changeDeleteBlockColor(text)
+        lifecycleScope.launch {
+            binding.edTodoItemText.textChanges().debounce(300).collectLatest {
+                vm.setEvent(TaskViewModel.EventUi.OnTodoTextEdited(it.toString()))
+            }
         }
     }
-    private fun changeDeleteBlockColor(text: String) {
-        if(text != "") {
-            val redColor = AppCompatResources.getColorStateList(requireContext(), R.color.color_light_red)
+
+    private fun changeDeleteBlockColor(state: TaskViewModel.UiState) {
+        if (state.creationTimestamp != null || !state.text.isNullOrEmpty()) {
+            val redColor =
+                AppCompatResources.getColorStateList(requireContext(), R.color.color_light_red)
             binding.imDelete.imageTintList = redColor
             binding.tvDelete.setTextColor(redColor)
         } else {
-            val disabledColor = AppCompatResources.getColorStateList(requireContext(), R.color.label_light_disable)
+            val disabledColor =
+                AppCompatResources.getColorStateList(requireContext(), R.color.label_light_disable)
             binding.imDelete.imageTintList = disabledColor
             binding.tvDelete.setTextColor(disabledColor)
         }
     }
+
     private fun initButtons() {
         binding.btnSave.setOnClickListener {
-            val currentTime = System.currentTimeMillis()
-            lifecycleScope.launch {
-                val newItem = TodoItem(
-                    id = todoItemUI.id ?: UUID.randomUUID().toString(),
-                    text = todoItemUI.text ?: "",
-                    importance = todoItemUI.importance,
-                    deadlineTimestamp = todoItemUI.deadlineTimestamp,
-                    isComplete = false,
-                    creationTimestamp = todoItemUI.creationTimestamp ?: currentTime,
-                    changeTimestamp = currentTime
-                )
-                if (todoItemUI.id == null) {
-                    repository.addItem(newItem)
-                } else {
-                    repository.updateItem(newItem)
-                }
-
-                findNavController().popBackStack()
-            }
+            vm.setEvent(TaskViewModel.EventUi.OnSaveButtonClicked)
         }
         binding.imDelete.setOnClickListener {
-            todoItemUI.id?.let {
-                lifecycleScope.launch {
-                    repository.deleteItemById(it)
-                    findNavController().popBackStack()
-                }
-            }
+            vm.setEvent(TaskViewModel.EventUi.OnDeleteButtonClicked)
         }
-        binding.imCancel.setOnClickListener { findNavController().popBackStack() }
+        binding.imCancel.setOnClickListener { vm.setEvent(TaskViewModel.EventUi.OnBackButtonClicked) }
     }
 
     private fun initPopUpMenu() {
@@ -139,8 +136,6 @@ class TaskFragment : Fragment() {
         )
         highElement.title = s
 
-        changeImportanceValue(todoItemUI.importance)
-
         binding.flImportanceMenu.setOnClickListener { currentPopupMenu.show() }
 
         currentPopupMenu.setOnMenuItemClickListener { menuItem ->
@@ -156,8 +151,9 @@ class TaskFragment : Fragment() {
                 }
                 else -> Importance.LOW
             }
-            todoItemUI.importance = newImportance
-            changeImportanceValue(newImportance)
+            vm.setEvent(
+                TaskViewModel.EventUi.OnImportanceSelected(newImportance)
+            )
             true
         }
     }
@@ -186,12 +182,11 @@ class TaskFragment : Fragment() {
         }
 
         binding.swDeadline.setOnClickListener {
-            if (!binding.swDeadline.isChecked) {
-                todoItemUI.deadlineTimestamp = null
-                binding.tvDeadlineDate.text = ""
-            } else {
-                showDatePicker()
-            }
+            vm.setEvent(
+                TaskViewModel.EventUi.OnDeadlineSwitchChanged(
+                    binding.swDeadline.isChecked
+                )
+            )
         }
     }
 
@@ -206,12 +201,23 @@ class TaskFragment : Fragment() {
             c.set(Calendar.YEAR, year)
             c.set(Calendar.MONTH, monthOfYear)
             c.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-            binding.tvDeadlineDate.text = dateFormat.format(c.time)
-            binding.swDeadline.isChecked = true
-            todoItemUI.deadlineTimestamp = c.timeInMillis
+
+            vm.setEvent(
+                TaskViewModel.EventUi.OnDeadlineSelected(c.timeInMillis)
+            )
         }, year, month, day)
 
         dpd.show()
+    }
+
+    private fun setDeadlineDate(timestamp: Long?) {
+        if (timestamp == null) {
+            binding.tvDeadlineDate.text = ""
+            binding.swDeadline.isChecked = false
+            return
+        }
+        binding.tvDeadlineDate.text = dateFormat.format(timestamp)
+        binding.swDeadline.isChecked = true
     }
 
     companion object {

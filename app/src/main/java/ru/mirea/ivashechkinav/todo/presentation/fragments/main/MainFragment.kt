@@ -1,4 +1,4 @@
-package ru.mirea.ivashechkinav.todo.presentation.fragments
+package ru.mirea.ivashechkinav.todo.presentation.fragments.main
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
-import ru.mirea.ivashechkinav.todo.data.repository.TodoItemsRepositoryImpl
 import ru.mirea.ivashechkinav.todo.databinding.FragmentMainBinding
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 import ru.mirea.ivashechkinav.todo.presentation.adapters.SwipeTodoItemCallback
@@ -25,6 +24,7 @@ class MainFragment : Fragment() {
     private lateinit var todoRecyclerView: RecyclerView
     private lateinit var repository: TodoItemsRepository
     private lateinit var todoAdapter: TodoAdapter
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
