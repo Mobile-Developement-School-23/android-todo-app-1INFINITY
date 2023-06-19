@@ -39,8 +39,10 @@ class MainFragment : Fragment() {
 
     private fun initTodoListObserve() {
         lifecycleScope.launch {
-            repository.getTodoItemsFlow().collect {
-                todoAdapter.submitList(it)
+            repository.getTodoItemsFlow().collect { list ->
+                todoAdapter.submitList(list)
+                val count = list.count { it.isComplete }.toString()
+                binding.tvCountDone.text = "Выполнено - $count"
             }
         }
     }
