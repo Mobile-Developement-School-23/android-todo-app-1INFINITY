@@ -104,10 +104,10 @@
             android:layout_height="48dp"
             app:layout_constraintBottom_toBottomOf="@+id/tvDeadlineDate"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@+id/tvDeadline" />
+            app:layout_constraintTop_toTopOf="@+id/tvDeadlineText" />
 
         <TextView
-            android:id="@+id/tvDeadline"
+            android:id="@+id/tvDeadlineText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
@@ -121,8 +121,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/color_light_blue"
-            app:layout_constraintStart_toStartOf="@+id/tvDeadline"
-            app:layout_constraintTop_toBottomOf="@+id/tvDeadline"
+            app:layout_constraintStart_toStartOf="@+id/tvDeadlineText"
+            app:layout_constraintTop_toBottomOf="@+id/tvDeadlineText"
             tools:text="1 января 1970" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 

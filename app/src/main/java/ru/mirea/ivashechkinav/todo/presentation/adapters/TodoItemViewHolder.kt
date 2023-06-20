@@ -13,6 +13,8 @@ import androidx.recyclerview.widget.RecyclerView
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
+import java.text.SimpleDateFormat
+import java.util.*
 
 class TodoItemViewHolder(itemView: View, private val applicationContext: Context) :
     RecyclerView.ViewHolder(itemView) {
@@ -21,6 +23,7 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
     val isCompleteCheckBox: CheckBox = itemView.findViewById(R.id.cbIsComplete)
     private val todoText: TextView = itemView.findViewById(R.id.tvTodoText)
     private val importanceIcon: ImageView = itemView.findViewById(R.id.imImportance)
+    private val deadlineText: TextView = itemView.findViewById(R.id.tvDeadlineText)
 
     fun onBind(todoItem: TodoItem) {
         this.todoItem = todoItem
@@ -32,8 +35,18 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
         val item = todoItem ?: return
         initCheckedState(item)
         initImportanceState(item)
+        initDeadlineDate(item)
     }
 
+    private fun initDeadlineDate(item: TodoItem) {
+        if(item.isComplete) {
+            deadlineText.visibility = View.GONE
+            return
+        }
+        val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale.getDefault())
+        deadlineText.text = dateFormat.format(item.deadlineTimestamp)
+        deadlineText.visibility = View.VISIBLE
+    }
     private fun initCheckedState(item: TodoItem) {
         isCompleteCheckBox.isChecked = item.isComplete
         if (item.isComplete) {

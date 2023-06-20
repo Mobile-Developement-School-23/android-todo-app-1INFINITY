@@ -37,7 +37,7 @@
             tools:text="@string/item_text" />
 
         <TextView
-            android:id="@+id/tvDate"
+            android:id="@+id/tvDeadlineText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="дата"
