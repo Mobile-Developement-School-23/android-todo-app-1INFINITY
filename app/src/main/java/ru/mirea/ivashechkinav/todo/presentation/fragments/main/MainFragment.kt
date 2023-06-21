@@ -47,6 +47,11 @@ class MainFragment : Fragment() {
         }
     }
 
+    private fun initToolBar() {
+//        setSupportActionBar(binding.toolbar)
+//        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    }
+
     private fun recyclerViewInit() {
         todoRecyclerView = binding.rwTodoList
         todoAdapter = TodoAdapter(

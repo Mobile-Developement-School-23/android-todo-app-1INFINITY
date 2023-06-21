@@ -41,9 +41,9 @@ dependencies {
     def nav_version = "2.6.0"
     def lifecycle_version = "2.5.1"
     def coroutines_version = "1.6.1"
+    def material_version = "1.9.0"
     implementation 'androidx.core:core-ktx:1.10.1'
     implementation 'androidx.appcompat:appcompat:1.6.1'
-    implementation 'com.google.android.material:material:1.9.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
@@ -59,4 +59,7 @@ dependencies {
 
     // coroutines
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version"
+
+    // Material
+    implementation "com.google.android.material:material:$material_version"
 }
