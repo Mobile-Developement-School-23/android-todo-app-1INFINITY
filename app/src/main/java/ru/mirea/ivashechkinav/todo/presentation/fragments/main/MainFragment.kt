@@ -28,10 +28,11 @@ class MainFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentMainBinding.inflate(inflater, container, false)
         repository = (requireActivity().application as App).repository
-        recyclerViewInit()
+        initVisibleButton()
+        initRecyclerView()
         floatingButtonInit()
         initTodoListObserve()
         return binding.root
@@ -46,13 +47,14 @@ class MainFragment : Fragment() {
             }
         }
     }
-
-    private fun initToolBar() {
-//        setSupportActionBar(binding.toolbar)
-//        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    private fun initVisibleButton() {
+        binding.cbVisible.setOnCheckedChangeListener { _, isChecked ->
+            lifecycleScope.launch {
+                repository.filterItemsWith(isChecked = isChecked)
+            }
+        }
     }
-
-    private fun recyclerViewInit() {
+    private fun initRecyclerView() {
         todoRecyclerView = binding.rwTodoList
         todoAdapter = TodoAdapter(
             object : TodoAdapter.Listener {

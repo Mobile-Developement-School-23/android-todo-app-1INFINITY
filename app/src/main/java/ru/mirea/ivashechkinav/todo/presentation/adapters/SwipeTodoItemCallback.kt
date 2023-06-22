@@ -5,6 +5,8 @@ import android.graphics.*
 import android.util.DisplayMetrics
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.view.marginLeft
+import androidx.core.view.marginRight
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import ru.mirea.ivashechkinav.todo.R
@@ -65,7 +67,7 @@ class SwipeTodoItemCallback(
             val itemView = viewHolder.itemView
             if (dX > 0) {
                 c.drawRect(
-                    itemView.left.toFloat(), itemView.top.toFloat(), dX,
+                    itemView.left.toFloat(), itemView.top.toFloat(), itemView.left.toFloat() + dX + convertDpToPx(8),
                     itemView.bottom.toFloat(), acceptSwipePaint
                 )
                 c.drawBitmap(

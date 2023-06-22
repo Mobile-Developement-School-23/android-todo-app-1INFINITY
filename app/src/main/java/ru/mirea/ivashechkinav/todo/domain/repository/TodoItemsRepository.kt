@@ -11,6 +11,8 @@ interface TodoItemsRepository {
 
     suspend fun updateItem(item: TodoItem): Boolean
 
+    suspend fun filterItemsWith(isChecked: Boolean)
+
     fun getAllItems(): List<TodoItem>
 
     fun getItemById(id: String): TodoItem?

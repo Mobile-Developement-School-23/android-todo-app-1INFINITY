@@ -26,7 +26,6 @@ import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.databinding.FragmentTaskBinding
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
-import ru.mirea.ivashechkinav.todo.presentation.models.TodoItemUI
 import ru.mirea.ivashechkinav.todo.presentation.utils.textChanges
 import java.text.SimpleDateFormat
 import java.util.*
@@ -37,8 +36,6 @@ class TaskFragment : Fragment() {
     private val vm: TaskViewModel by viewModels { TaskViewModel.Factory }
     private lateinit var binding: FragmentTaskBinding
     private val args: TaskFragmentArgs by navArgs()
-    private lateinit var repository: TodoItemsRepository
-    private val todoItemUI = TodoItemUI()
     private var popupMenu: PopupMenu? = null
 
     override fun onCreateView(
@@ -46,9 +43,6 @@ class TaskFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         binding = FragmentTaskBinding.inflate(inflater, container, false)
-
-        repository = (requireActivity().application as App).repository
-
 
         loadArgs()
         initEditTextObserve()
@@ -171,7 +165,7 @@ class TaskFragment : Fragment() {
                 binding.tvImportanceValue.text = currentPopupMenu.menu.getItem(2).title
             }
             else -> {
-                throw UnsupportedOperationException("Unknown Importance value: ${todoItemUI.importance}")
+                throw UnsupportedOperationException("Unknown Importance value: $importance")
             }
         }
     }

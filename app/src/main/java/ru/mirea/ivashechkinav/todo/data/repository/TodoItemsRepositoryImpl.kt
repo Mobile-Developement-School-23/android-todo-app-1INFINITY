@@ -51,6 +51,14 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
         return@withContext false
     }
 
+    override suspend fun filterItemsWith(isChecked: Boolean) = withContext(Dispatchers.IO) {
+        if(!isChecked) {
+            todoItemsFlow.value = todoItems.toList()
+            return@withContext
+        }
+        todoItemsFlow.value = todoItems.filter { !it.isComplete }.toList()
+    }
+
     override fun getAllItems() = todoItems.toList()
 
     override fun getItemById(id: String) = todoItems.firstOrNull { it.id == id }

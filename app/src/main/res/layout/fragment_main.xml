@@ -51,58 +51,48 @@
                 android:layout_height="50dp"
                 android:layout_gravity="bottom"
                 >
-                <ImageView
-                    android:id="@+id/imVisible"
+
+                <CheckBox
+                    android:id="@+id/cbVisible"
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_gravity="bottom|end"
-                    android:layout_marginEnd="17dp"
-                    android:contentDescription="@string/hide_visibility_image_button"
-                    android:paddingHorizontal="8dp"
-                    android:src="@drawable/ic_visibility_on"
-                    app:tint="@color/color_light_blue" />
+                    android:layout_marginEnd="10dp"
+                    android:button="@drawable/custom_checkbox_selector_visible"
+                    android:buttonTint="@color/color_light_blue"
+                    android:checked="false"
+                    android:contentDescription="@string/hide_visibility_image_button" />
             </FrameLayout>
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
-    <androidx.constraintlayout.widget.ConstraintLayout
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/floatingActionButton"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="40dp"
+        android:clickable="true"
+        android:contentDescription="@string/create_new_task"
+        android:src="@drawable/add"
+        app:backgroundTint="@color/color_light_blue"
+        app:tint="@color/color_light_white" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rwTodoList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:background="@color/back_light_primary"
+        android:clipToPadding="false"
         android:paddingHorizontal="8dp"
-        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior">
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rwTodoList"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:clipToPadding="false"
-            android:paddingBottom="12dp"
-            android:scrollbarStyle="outsideOverlay"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:itemCount="10"
-            tools:listitem="@layout/item_container_todo" />
-
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/floatingActionButton"
-            android:layout_width="56dp"
-            android:layout_height="56dp"
-            android:layout_marginEnd="8dp"
-            android:layout_marginBottom="40dp"
-            android:clickable="true"
-            android:contentDescription="@string/create_new_task"
-            android:src="@drawable/add"
-            app:backgroundTint="@color/color_light_blue"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:tint="@color/color_light_white" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+        android:paddingBottom="12dp"
+        android:scrollbarStyle="outsideOverlay"
+        app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"
+        tools:itemCount="10"
+        tools:listitem="@layout/item_container_todo" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
 
