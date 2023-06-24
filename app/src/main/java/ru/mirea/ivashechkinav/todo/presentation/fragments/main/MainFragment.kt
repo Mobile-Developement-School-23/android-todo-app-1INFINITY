@@ -5,23 +5,23 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.databinding.FragmentMainBinding
-import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 import ru.mirea.ivashechkinav.todo.presentation.adapters.SwipeTodoItemCallback
 import ru.mirea.ivashechkinav.todo.presentation.adapters.TodoAdapter
 
 class MainFragment : Fragment() {
+    private val vm: MainViewModel by viewModels { MainViewModel.Factory }
     private lateinit var binding: FragmentMainBinding
     private lateinit var todoRecyclerView: RecyclerView
-    private lateinit var repository: TodoItemsRepository
     private lateinit var todoAdapter: TodoAdapter
 
     override fun onCreateView(
@@ -29,30 +29,44 @@ class MainFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         binding = FragmentMainBinding.inflate(inflater, container, false)
-        repository = (requireActivity().application as App).repository
         initVisibleButton()
         initRecyclerView()
         initRecyclerViewSwipes()
         floatingButtonInit()
-        initTodoListObserve()
+        initViewModelObservers()
         return binding.root
     }
 
-    private fun initTodoListObserve() {
+    private fun initViewModelObservers() {
         lifecycleScope.launch {
-            repository.getTodoItemsFlow().collect { list ->
-                todoAdapter.submitList(list)
-                val count = list.count { it.isComplete }.toString()
-                binding.tvCountDone.text = "Выполнено - $count"
+            vm.uiState.collectLatest { state ->
+                binding.tvCountDone.text = state.countOfCompletedText
+                todoAdapter.submitList(state.todoItems)
+            }
+        }
+        lifecycleScope.launch {
+            vm.effect.collect {
+                when (it) {
+                    is MainViewModel.EffectUi.ToTaskFragmentUpdate -> {
+                        val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate(
+                            taskId = it.todoItemId
+                        )
+                        findNavController().navigate(action)
+                    }
+                    is MainViewModel.EffectUi.ToTaskFragmentCreate -> {
+                        val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate()
+                        findNavController().navigate(action)
+                    }
+                }
             }
         }
     }
 
     private fun initVisibleButton() {
         binding.cbVisible.setOnCheckedChangeListener { _, isChecked ->
-            lifecycleScope.launch {
-                repository.filterItemsWith(isChecked = isChecked)
-            }
+            vm.setEvent(
+                MainViewModel.EventUi.OnVisibleChange(isFilterCompleted = isChecked)
+            )
         }
     }
 
@@ -61,18 +75,15 @@ class MainFragment : Fragment() {
         todoAdapter = TodoAdapter(
             object : TodoAdapter.Listener {
                 override fun onItemClicked(todoItem: TodoItem) {
-                    val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate(
-                        taskId = todoItem.id
+                    vm.setEvent(
+                        MainViewModel.EventUi.OnItemSelected(todoItem)
                     )
-                    findNavController().navigate(action)
                 }
 
                 override fun onItemChecked(todoItem: TodoItem) {
-                    val itemChecked = todoItem
-                        .copy(isComplete = !todoItem.isComplete)
-                    lifecycleScope.launch {
-                        repository.updateItem(itemChecked)
-                    }
+                    vm.setEvent(
+                        MainViewModel.EventUi.OnItemCheckedChange(todoItem)
+                    )
                 }
             },
             applicationContext = activity!!.applicationContext
@@ -81,30 +92,27 @@ class MainFragment : Fragment() {
             LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
         todoRecyclerView.adapter = todoAdapter
         todoRecyclerView.layoutManager = layoutManager
-        todoAdapter.submitList(repository.getAllItems())
     }
 
     private fun floatingButtonInit() {
-        val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate()
         binding.floatingActionButton.setOnClickListener {
-            findNavController().navigate(action)
+            vm.setEvent(
+                MainViewModel.EventUi.OnFloatingButtonClick
+            )
         }
     }
 
     private fun initRecyclerViewSwipes() {
         val swipeCallback = SwipeTodoItemCallback(
             onSwipeLeft = { todoItem ->
-                val itemId = todoItem.id
-                lifecycleScope.launch {
-                    repository.deleteItemById(itemId)
-                }
+                vm.setEvent(
+                    MainViewModel.EventUi.OnItemSwipeToDelete(todoItem)
+                )
             },
             onSwipeRight = { todoItem ->
-                val itemChecked = todoItem
-                    .copy(isComplete = !todoItem.isComplete)
-                lifecycleScope.launch {
-                    repository.updateItem(itemChecked)
-                }
+                vm.setEvent(
+                    MainViewModel.EventUi.OnItemSwipeToCheck(todoItem)
+                )
             },
             applicationContext = activity!!.baseContext
         )

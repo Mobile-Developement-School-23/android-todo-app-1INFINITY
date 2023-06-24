@@ -59,7 +59,7 @@ class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
     private val _effect: Channel<EffectUi> = Channel()
     val effect = _effect.receiveAsFlow()
 
-    fun setState(reduce: UiState.() -> UiState) {
+    private fun setState(reduce: UiState.() -> UiState) {
         val newState = uiState.value.reduce()
         _uiState.value = newState
     }
