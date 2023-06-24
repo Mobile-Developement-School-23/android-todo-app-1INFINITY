@@ -10,13 +10,14 @@ import androidx.core.view.marginRight
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import ru.mirea.ivashechkinav.todo.R
+import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import kotlin.math.roundToInt
 
 
 class SwipeTodoItemCallback(
     private val applicationContext: Context,
-    private val onSwipeLeft: (position: Int) -> Unit,
-    private val onSwipeRight: (position: Int) -> Unit
+    private val onSwipeLeft: (todoItem: TodoItem) -> Unit,
+    private val onSwipeRight: (todoItem: TodoItem) -> Unit
 ) : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
 
     private val acceptSwipePaint = Paint().apply {
@@ -43,13 +44,13 @@ class SwipeTodoItemCallback(
     }
 
     override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-        val position = viewHolder.adapterPosition
+        val todoItem = (viewHolder as TodoItemViewHolder).todoItem ?: return
         when (direction) {
             ItemTouchHelper.LEFT -> {
-                onSwipeLeft(position)
+                onSwipeLeft(todoItem)
             }
             ItemTouchHelper.RIGHT -> {
-                onSwipeRight(position)
+                onSwipeRight(todoItem)
             }
         }
     }

@@ -19,7 +19,6 @@ import ru.mirea.ivashechkinav.todo.presentation.adapters.SwipeTodoItemCallback
 import ru.mirea.ivashechkinav.todo.presentation.adapters.TodoAdapter
 
 class MainFragment : Fragment() {
-
     private lateinit var binding: FragmentMainBinding
     private lateinit var todoRecyclerView: RecyclerView
     private lateinit var repository: TodoItemsRepository
@@ -33,6 +32,7 @@ class MainFragment : Fragment() {
         repository = (requireActivity().application as App).repository
         initVisibleButton()
         initRecyclerView()
+        initRecyclerViewSwipes()
         floatingButtonInit()
         initTodoListObserve()
         return binding.root
@@ -47,6 +47,7 @@ class MainFragment : Fragment() {
             }
         }
     }
+
     private fun initVisibleButton() {
         binding.cbVisible.setOnCheckedChangeListener { _, isChecked ->
             lifecycleScope.launch {
@@ -54,6 +55,7 @@ class MainFragment : Fragment() {
             }
         }
     }
+
     private fun initRecyclerView() {
         todoRecyclerView = binding.rwTodoList
         todoAdapter = TodoAdapter(
@@ -80,7 +82,6 @@ class MainFragment : Fragment() {
         todoRecyclerView.adapter = todoAdapter
         todoRecyclerView.layoutManager = layoutManager
         todoAdapter.submitList(repository.getAllItems())
-        initRecyclerViewSwipes(todoAdapter)
     }
 
     private fun floatingButtonInit() {
@@ -90,19 +91,17 @@ class MainFragment : Fragment() {
         }
     }
 
-    private fun initRecyclerViewSwipes(adapter: TodoAdapter) {
+    private fun initRecyclerViewSwipes() {
         val swipeCallback = SwipeTodoItemCallback(
-            onSwipeLeft = { position ->
-                val itemId = adapter.getItemAtPosition(position).id
+            onSwipeLeft = { todoItem ->
+                val itemId = todoItem.id
                 lifecycleScope.launch {
                     repository.deleteItemById(itemId)
                 }
             },
-            onSwipeRight = { position ->
-                val oldItem = adapter
-                    .getItemAtPosition(position)
-                val itemChecked = oldItem
-                    .copy(isComplete = !oldItem.isComplete)
+            onSwipeRight = { todoItem ->
+                val itemChecked = todoItem
+                    .copy(isComplete = !todoItem.isComplete)
                 lifecycleScope.launch {
                     repository.updateItem(itemChecked)
                 }
