@@ -5,16 +5,15 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
     sealed class EventUi {
         data class OnVisibleChange(val isFilterCompleted: Boolean) : EventUi()
@@ -55,11 +54,14 @@ class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
         val effectValue = builder()
         viewModelScope.launch { _effect.send(effectValue) }
     }
-
+    private val visibleStateFlow = MutableStateFlow(false)
+    private val itemsFlow = visibleStateFlow.flatMapLatest {
+        repository.getTodoItemsFlowWith(isChecked = it)
+    }
     init {
         viewModelScope.launch {
-            repository.getTodoItemsFlow().collect { list ->
-                val count = list.count { it.isComplete }.toString()
+            itemsFlow.collect { list ->
+                val count = repository.getCountOfCompletedItems()
                 if (uiState.value.isFilterCompleted) {
                     setState {
                         copy(
@@ -81,6 +83,7 @@ class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
             _event.collect { event ->
                 when (event) {
                     is EventUi.OnVisibleChange -> {
+                        visibleStateFlow.value = event.isFilterCompleted
                         setState {
                             copy(
                                 isFilterCompleted = event.isFilterCompleted

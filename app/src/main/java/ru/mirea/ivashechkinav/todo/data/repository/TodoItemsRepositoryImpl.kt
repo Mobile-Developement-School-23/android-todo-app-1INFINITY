@@ -1,39 +1,37 @@
 package ru.mirea.ivashechkinav.todo.data.repository
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
+import ru.mirea.ivashechkinav.todo.data.room.TodoDao
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 
-class TodoItemsRepositoryImpl: TodoItemsRepository {
-    private val todoItems: MutableList<TodoItem> = generateItems()
+class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository {
 
-    private val todoItemsFlow: MutableStateFlow<List<TodoItem>> = MutableStateFlow(todoItems.toList())
+    init {
+        GlobalScope.launch(Dispatchers.IO) {
+            todoDao.deleteAll()
+            todoDao.save(generateItems())
+        }
+    }
 
     override suspend fun addItem(item: TodoItem) = withContext(Dispatchers.IO) {
-        val result = todoItems.add(item)
-        todoItemsFlow.value = todoItems.toList()
-        return@withContext result
+        todoDao.save(item = item)
     }
 
     override suspend fun deleteItemById(id: String) = withContext(Dispatchers.IO) {
-        val result = todoItems.removeIf { it.id == id }
-        todoItemsFlow.value = todoItems.toList()
-        return@withContext result
+        todoDao.deleteById(itemId = id)
     }
 
     override fun getTodoItemsFlow(): Flow<List<TodoItem>> {
-        return todoItemsFlow.asStateFlow()
+        return todoDao.getAllFlow()
     }
 
     override suspend fun updateItem(item: TodoItem) = withContext(Dispatchers.IO) {
-        val itemToUpdate = todoItems.find {it.id == item.id}
+        val itemToUpdate = todoDao.getById(itemId = item.id)
 
         itemToUpdate?.let {
             val updatedItem = it.copy(
@@ -43,29 +41,23 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = item.isComplete,
                 changeTimestamp = System.currentTimeMillis()
             )
-            val indexToUpdate = todoItems.indexOf(itemToUpdate)
-            todoItems[indexToUpdate] = updatedItem
-            todoItemsFlow.value = todoItems.toList()
-            return@withContext true
+            todoDao.update(item = updatedItem)
         }
-        return@withContext false
+        return@withContext
     }
 
-    override suspend fun filterItemsWith(isChecked: Boolean) = withContext(Dispatchers.IO) {
-        if(!isChecked) {
-            todoItemsFlow.value = todoItems.toList()
-            return@withContext
+    override suspend fun getTodoItemsFlowWith(isChecked: Boolean) = withContext(Dispatchers.IO) {
+        if(isChecked) {
+            return@withContext todoDao.getAllFlowWithCheckedState(isChecked = false)
         }
-        todoItemsFlow.value = todoItems.filter { !it.isComplete }.toList()
+        return@withContext todoDao.getAllFlow()
     }
 
     override suspend fun getCountOfCompletedItems(): Int = withContext(Dispatchers.IO) {
-        return@withContext todoItems.count { it.isComplete }
+        return@withContext todoDao.getCompletedCount()
     }
 
-    override fun getAllItems() = todoItems.toList()
-
-    override fun getItemById(id: String) = todoItems.firstOrNull { it.id == id }
+    override suspend fun getItemById(id: String) = todoDao.getById(itemId = id)
 
     private fun generateItems(): MutableList<TodoItem> {
         return mutableListOf(

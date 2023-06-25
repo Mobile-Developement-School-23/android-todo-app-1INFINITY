@@ -5,19 +5,17 @@ import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 
 interface TodoItemsRepository {
 
-    suspend fun addItem(item: TodoItem): Boolean
+    suspend fun addItem(item: TodoItem)
 
-    suspend fun deleteItemById(id: String): Boolean
+    suspend fun deleteItemById(id: String)
 
-    suspend fun updateItem(item: TodoItem): Boolean
+    suspend fun updateItem(item: TodoItem)
 
-    suspend fun filterItemsWith(isChecked: Boolean)
+    suspend fun getTodoItemsFlowWith(isChecked: Boolean): Flow<List<TodoItem>>
 
     suspend fun getCountOfCompletedItems(): Int
 
-    fun getAllItems(): List<TodoItem>
-
-    fun getItemById(id: String): TodoItem?
+    suspend fun getItemById(id: String): TodoItem?
 
     fun getTodoItemsFlow(): Flow<List<TodoItem>>
 }
