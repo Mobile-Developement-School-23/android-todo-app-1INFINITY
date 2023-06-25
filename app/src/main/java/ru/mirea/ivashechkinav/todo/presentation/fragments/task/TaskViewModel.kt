@@ -16,6 +16,7 @@ import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainViewModel
 import java.util.*
 
 class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
@@ -37,6 +38,7 @@ class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
     }
 
     sealed class EffectUi {
+        data class ShowSnackbar(val message: String) : EffectUi()
         object ToBackFragment : EffectUi()
         object ShowDatePicker : EffectUi()
     }
@@ -78,18 +80,10 @@ class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
                     is EventUi.OnBackButtonClicked -> setEffect { EffectUi.ToBackFragment }
                     is EventUi.OnCancelButtonClicked -> setEffect { EffectUi.ToBackFragment }
                     is EventUi.OnSaveButtonClicked -> {
-                        val currentTime = System.currentTimeMillis()
-                        val currentTodoItem = uiState.value
-                        val newItem = TodoItem(
-                            id = currentTodoItem.id ?: UUID.randomUUID().toString(),
-                            text = currentTodoItem.text ?: "",
-                            importance = currentTodoItem.importance,
-                            deadlineTimestamp = currentTodoItem.deadlineTimestamp,
-                            isComplete = currentTodoItem.isComplete,
-                            creationTimestamp = currentTodoItem.creationTimestamp ?: currentTime,
-                            changeTimestamp = currentTime
-                        )
-                        if (currentTodoItem.id == null) {
+
+                        val newItem = validateSaveTask() ?: return@collect
+
+                        if (uiState.value.id == null) {
                             repository.addItem(newItem)
                         } else {
                             repository.updateItem(newItem)
@@ -149,6 +143,24 @@ class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
                 }
             }
         }
+    }
+
+    private fun validateSaveTask(): TodoItem? {
+        val currentTime = System.currentTimeMillis()/1000
+        val currentTodoItem = uiState.value
+        if(currentTodoItem.text.isNullOrEmpty()) {
+            setEffect { EffectUi.ShowSnackbar("Необходимо ввести описание дела") }
+            return null
+        }
+        return TodoItem(
+            id = currentTodoItem.id ?: UUID.randomUUID().toString(),
+            text = currentTodoItem.text ?: "",
+            importance = currentTodoItem.importance,
+            deadlineTimestamp = currentTodoItem.deadlineTimestamp,
+            isComplete = currentTodoItem.isComplete,
+            creationTimestamp = currentTodoItem.creationTimestamp ?: currentTime,
+            changeTimestamp = currentTime
+        )
     }
 
     companion object {

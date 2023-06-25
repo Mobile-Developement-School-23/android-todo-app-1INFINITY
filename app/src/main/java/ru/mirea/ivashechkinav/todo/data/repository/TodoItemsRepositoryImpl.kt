@@ -59,6 +59,10 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
         todoItemsFlow.value = todoItems.filter { !it.isComplete }.toList()
     }
 
+    override suspend fun getCountOfCompletedItems(): Int = withContext(Dispatchers.IO) {
+        return@withContext todoItems.count { it.isComplete }
+    }
+
     override fun getAllItems() = todoItems.toList()
 
     override fun getItemById(id: String) = todoItems.firstOrNull { it.id == id }

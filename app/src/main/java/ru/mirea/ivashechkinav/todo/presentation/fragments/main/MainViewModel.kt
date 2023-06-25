@@ -14,11 +14,10 @@ import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
-import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskViewModel
 
 class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
     sealed class EventUi {
-        data class OnVisibleChange(val isFilterCompleted: Boolean): EventUi()
+        data class OnVisibleChange(val isFilterCompleted: Boolean) : EventUi()
         data class OnItemSelected(val todoItem: TodoItem) : EventUi()
         data class OnItemCheckedChange(val todoItem: TodoItem) : EventUi()
         data class OnItemSwipeToDelete(val todoItem: TodoItem) : EventUi()
@@ -61,11 +60,11 @@ class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
         viewModelScope.launch {
             repository.getTodoItemsFlow().collect { list ->
                 val count = list.count { it.isComplete }.toString()
-                if(uiState.value.isFilterCompleted){
+                if (uiState.value.isFilterCompleted) {
                     setState {
                         copy(
                             countOfCompletedText = "Скрыто выполненных - $count",
-                            todoItems = list.filter { !it.isComplete}
+                            todoItems = list.filter { !it.isComplete }
                         )
                     }
                 } else {

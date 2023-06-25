@@ -13,6 +13,8 @@ interface TodoItemsRepository {
 
     suspend fun filterItemsWith(isChecked: Boolean)
 
+    suspend fun getCountOfCompletedItems(): Int
+
     fun getAllItems(): List<TodoItem>
 
     fun getItemById(id: String): TodoItem?

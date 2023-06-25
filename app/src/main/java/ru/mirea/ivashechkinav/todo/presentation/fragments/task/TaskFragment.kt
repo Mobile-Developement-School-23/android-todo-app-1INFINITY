@@ -16,6 +16,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
@@ -65,8 +66,11 @@ class TaskFragment : Fragment() {
             }
         }
         lifecycleScope.launch {
-            vm.effect.collect {
-                when (it) {
+            vm.effect.collect { effect ->
+                when (effect) {
+                    is TaskViewModel.EffectUi.ShowSnackbar -> {
+                        Snackbar.make(binding.root, effect.message, Snackbar.LENGTH_SHORT).show()
+                    }
                     is TaskViewModel.EffectUi.ToBackFragment -> findNavController().popBackStack()
                     is TaskViewModel.EffectUi.ShowDatePicker -> showDatePicker()
                 }

@@ -38,12 +38,13 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
     }
 
     private fun initDeadlineDate(item: TodoItem) {
-        if (item.isComplete) {
+        val date = item.deadlineTimestamp
+        if (item.isComplete || date == null) {
             deadlineText.visibility = View.GONE
             return
         }
         val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale.getDefault())
-        deadlineText.text = dateFormat.format(item.deadlineTimestamp)
+        deadlineText.text = dateFormat.format(date)
         deadlineText.visibility = View.VISIBLE
     }
 
