@@ -17,5 +17,7 @@ interface TodoItemsRepository {
 
     suspend fun getItemById(id: String): TodoItem?
 
+    suspend fun pullItemsFromServer()
+
     fun getTodoItemsFlow(): Flow<List<TodoItem>>
 }

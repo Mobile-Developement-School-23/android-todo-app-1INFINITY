@@ -6,10 +6,16 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
+import ru.mirea.ivashechkinav.todo.data.retrofit.*
 import ru.mirea.ivashechkinav.todo.data.room.TodoDao
+import ru.mirea.ivashechkinav.todo.data.sharedprefs.RevisionRepository
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 
-class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository {
+class TodoItemsRepositoryImpl(
+    private val todoDao: TodoDao,
+    private val todoApi: TodoApi,
+    private val revisionRepository: RevisionRepository
+) : TodoItemsRepository {
 
     init {
         GlobalScope.launch(Dispatchers.IO) {
@@ -20,10 +26,20 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
 
     override suspend fun addItem(item: TodoItem) = withContext(Dispatchers.IO) {
         todoDao.save(item = item)
+
+        val lastRevision = revisionRepository.getLastRevision()
+        val nwRequest = NWRequest(
+            element = item.toNetworkItem()
+        )
+        todoApi.add(revision = lastRevision, itemRequest = nwRequest)
+        return@withContext
     }
 
     override suspend fun deleteItemById(id: String) = withContext(Dispatchers.IO) {
         todoDao.deleteById(itemId = id)
+        val lastRevision = revisionRepository.getLastRevision()
+        todoApi.delete(revision = lastRevision, id = id)
+        return@withContext
     }
 
     override fun getTodoItemsFlow(): Flow<List<TodoItem>> {
@@ -42,12 +58,18 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 changeTimestamp = System.currentTimeMillis()
             )
             todoDao.update(item = updatedItem)
+
+            val lastRevision = revisionRepository.getLastRevision()
+            val nwRequest = NWRequest(
+                element = item.toNetworkItem()
+            )
+            todoApi.update(revision = lastRevision, id = item.id, itemRequest = nwRequest)
         }
         return@withContext
     }
 
     override suspend fun getTodoItemsFlowWith(isChecked: Boolean) = withContext(Dispatchers.IO) {
-        if(isChecked) {
+        if (isChecked) {
             return@withContext todoDao.getAllFlowWithCheckedState(isChecked = false)
         }
         return@withContext todoDao.getAllFlow()
@@ -57,7 +79,26 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
         return@withContext todoDao.getCompletedCount()
     }
 
-    override suspend fun getItemById(id: String) = todoDao.getById(itemId = id)
+    override suspend fun getItemById(id: String) = withContext(Dispatchers.IO) {
+        val response = todoApi.getByID(id = id)
+        response.revision?.let {
+            revisionRepository.setRevision(it)
+        }
+        todoDao.getById(itemId = id)
+    }
+
+    override suspend fun pullItemsFromServer() = withContext(Dispatchers.IO) {
+        val response = todoApi.getAll()
+        response.revision?.let {
+            revisionRepository.setRevision(it)
+        }
+        todoDao.deleteAll()
+        val newList = response.list?.map {
+            it.toTodoItem() ?: return@withContext
+        } ?: return@withContext
+
+        todoDao.save(newList)
+    }
 
     private fun generateItems(): MutableList<TodoItem> {
         return mutableListOf(
@@ -69,8 +110,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "2",
                 text = "Buy groceries:\nMilk\nBread\nEggs\nBeacon",
                 importance = Importance.COMMON,
@@ -78,8 +118,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = true,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "3",
                 text = "Read a book",
                 importance = Importance.LOW,
@@ -87,8 +126,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = true,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "4",
                 text = "Call mom",
                 importance = Importance.HIGH,
@@ -96,8 +134,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "5",
                 text = "Fix leaking faucet",
                 importance = Importance.COMMON,
@@ -105,8 +142,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "6",
                 text = "Attend a meeting",
                 importance = Importance.HIGH,
@@ -114,8 +150,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "7",
                 text = "Pay bills",
                 importance = Importance.COMMON,
@@ -123,8 +158,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "8",
                 text = "Write a blog post",
                 importance = Importance.LOW,
@@ -132,8 +166,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "9",
                 text = "Plan vacation",
                 importance = Importance.HIGH,
@@ -141,8 +174,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "10",
                 text = "Clean the garage",
                 importance = Importance.COMMON,
@@ -150,8 +182,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "11",
                 text = "Finish the report for the quarterly meeting",
                 importance = Importance.HIGH,
@@ -159,8 +190,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "12",
                 text = "Prepare a presentation for the project pitch",
                 importance = Importance.COMMON,
@@ -168,8 +198,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "13",
                 text = "Research and gather data for market analysis",
                 importance = Importance.LOW,
@@ -177,8 +206,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "14",
                 text = "Organize team building activities for the department",
                 importance = Importance.HIGH,
@@ -186,8 +214,7 @@ class TodoItemsRepositoryImpl(private val todoDao: TodoDao): TodoItemsRepository
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "15",
                 text = "Implement new feature based on user feedback and requirements",
                 importance = Importance.COMMON,
