@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
+import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskViewModel
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
@@ -25,6 +27,7 @@ class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
     }
 
     sealed class EffectUi {
+        data class ShowSnackbar(val message: String) : EffectUi()
         data class ToTaskFragmentUpdate(val todoItemId: String) : EffectUi()
         object ToTaskFragmentCreate : EffectUi()
     }
@@ -105,7 +108,10 @@ class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
                         repository.updateItem(itemChecked)
                     }
                     is EventUi.OnItemSwipeToDelete -> {
-                        repository.deleteItemById(event.todoItem.id)
+                        repository.deleteItemById(event.todoItem.id).collectLatest {
+                            if (it is ResultData.Failure)
+                                setEffect { EffectUi.ShowSnackbar(message = it.message) }
+                        }
                     }
                     is EventUi.OnFloatingButtonClick -> {
                         setEffect { EffectUi.ToTaskFragmentCreate }

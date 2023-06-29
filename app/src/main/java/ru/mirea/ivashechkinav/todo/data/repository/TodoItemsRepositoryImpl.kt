@@ -1,14 +1,14 @@
 package ru.mirea.ivashechkinav.todo.data.repository
 
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
+import retrofit2.HttpException
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.data.retrofit.*
 import ru.mirea.ivashechkinav.todo.data.room.TodoDao
 import ru.mirea.ivashechkinav.todo.data.sharedprefs.RevisionRepository
+import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 
 class TodoItemsRepositoryImpl(
@@ -17,36 +17,94 @@ class TodoItemsRepositoryImpl(
     private val revisionRepository: RevisionRepository
 ) : TodoItemsRepository {
 
+    companion object {
+        const val MAX_ATTEMPTS = 3
+    }
+
     init {
         GlobalScope.launch(Dispatchers.IO) {
             todoDao.deleteAll()
-            todoDao.save(generateItems())
+            //todoDao.save(generateItems())
+            val response = todoApi.getAll()
+            todoDao.save(response.list!!.map { it.toTodoItem()!! })
+            revisionRepository.setRevision(response.revision!!)
         }
     }
 
-    override suspend fun addItem(item: TodoItem) = withContext(Dispatchers.IO) {
+    private fun <T> Flow<ResultData<T>>.onHttpError(): Flow<ResultData<T>> {
+        return catch { cause ->
+            if (cause is HttpException) {
+                when (cause.code()) {
+                    400 -> {
+                        emit(ResultData.failure("400"))
+                    }
+                    401 -> {
+                        emit(ResultData.failure("401"))
+                    }
+                    404 -> {
+                        emit(ResultData.failure("404"))
+                    }
+                    500 -> {
+                        emit(ResultData.failure("500"))
+                    }
+                    else -> {
+                        emit(ResultData.failure("Неизвестная Http ошибка"))
+                    }
+                }
+            } else {
+                emit(ResultData.failure("Неизвестная ошибка"))
+            }
+        }
+    }
+
+    override suspend fun addItem(item: TodoItem) = flow<ResultData<Nothing>> {
+        emit(ResultData.loading())
+        //Local
         todoDao.save(item = item)
 
+        //Network
         val lastRevision = revisionRepository.getLastRevision()
-        val nwRequest = NWRequest(
+        val request = NWRequest(
             element = item.toNetworkItem()
         )
-        todoApi.add(revision = lastRevision, itemRequest = nwRequest)
-        return@withContext
+        val response = todoApi.add(revision = lastRevision, itemRequest = request)
+        revisionRepository.setRevision(response.revision!!)
+        if (response.element != null)
+            emit(ResultData.success())
+        else
+            emit(ResultData.failure("Ошибка при добавлении нового дела"))
     }
+        .flowOn(Dispatchers.IO)
+        .retryWhen { cause, attempt ->
+            delay(1000)
+            attempt < MAX_ATTEMPTS && cause is HttpException
+        }
+        .onHttpError()
 
-    override suspend fun deleteItemById(id: String) = withContext(Dispatchers.IO) {
+    override suspend fun deleteItemById(id: String) = flow<ResultData<Nothing>> {
+        emit(ResultData.loading())
+        //Local
         todoDao.deleteById(itemId = id)
+
+        //Network
         val lastRevision = revisionRepository.getLastRevision()
-        todoApi.delete(revision = lastRevision, id = id)
-        return@withContext
+        val response = todoApi.delete(revision = lastRevision, id = id)
+        revisionRepository.setRevision(response.revision!!)
+        emit(ResultData.success())
     }
+        .flowOn(Dispatchers.IO)
+        .retryWhen { cause, attempt ->
+            delay(1000)
+            attempt < MAX_ATTEMPTS && cause is HttpException
+        }
+        .onHttpError()
 
     override fun getTodoItemsFlow(): Flow<List<TodoItem>> {
         return todoDao.getAllFlow()
     }
 
-    override suspend fun updateItem(item: TodoItem) = withContext(Dispatchers.IO) {
+    override suspend fun updateItem(item: TodoItem) = flow<ResultData<Nothing>> {
+        emit(ResultData.loading())
         val itemToUpdate = todoDao.getById(itemId = item.id)
 
         itemToUpdate?.let {
@@ -63,10 +121,18 @@ class TodoItemsRepositoryImpl(
             val nwRequest = NWRequest(
                 element = item.toNetworkItem()
             )
-            todoApi.update(revision = lastRevision, id = item.id, itemRequest = nwRequest)
+            val response =
+                todoApi.update(revision = lastRevision, id = item.id, itemRequest = nwRequest)
+            revisionRepository.setRevision(response.revision!!)
+            emit(ResultData.success())
         }
-        return@withContext
     }
+        .flowOn(Dispatchers.IO)
+        .retryWhen { cause, attempt ->
+            delay(1000)
+            attempt < MAX_ATTEMPTS && cause is HttpException
+        }
+        .onHttpError()
 
     override suspend fun getTodoItemsFlowWith(isChecked: Boolean) = withContext(Dispatchers.IO) {
         if (isChecked) {
@@ -79,26 +145,42 @@ class TodoItemsRepositoryImpl(
         return@withContext todoDao.getCompletedCount()
     }
 
-    override suspend fun getItemById(id: String) = withContext(Dispatchers.IO) {
+    override suspend fun getItemById(id: String) = flow<ResultData<TodoItem>> {
+        emit(ResultData.loading())
         val response = todoApi.getByID(id = id)
         response.revision?.let {
             revisionRepository.setRevision(it)
         }
-        todoDao.getById(itemId = id)
+        val item = todoDao.getById(itemId = id)
+        emit(ResultData.success(item))
     }
+        .flowOn(Dispatchers.IO)
+        .retryWhen { cause, attempt ->
+            delay(1000)
+            attempt < MAX_ATTEMPTS && cause is HttpException
+        }
+        .onHttpError()
 
-    override suspend fun pullItemsFromServer() = withContext(Dispatchers.IO) {
+    override suspend fun pullItemsFromServer() = flow<ResultData<Nothing>> {
+        emit(ResultData.loading())
         val response = todoApi.getAll()
         response.revision?.let {
             revisionRepository.setRevision(it)
         }
         todoDao.deleteAll()
         val newList = response.list?.map {
-            it.toTodoItem() ?: return@withContext
-        } ?: return@withContext
+            it.toTodoItem() ?: throw IllegalArgumentException("Item from server can not be null")
+        } ?: throw IllegalArgumentException("List from server can not be null ")
 
         todoDao.save(newList)
+        emit(ResultData.success())
     }
+        .flowOn(Dispatchers.IO)
+        .retryWhen { cause, attempt ->
+            delay(1000)
+            attempt < MAX_ATTEMPTS && cause is HttpException
+        }
+        .onHttpError()
 
     private fun generateItems(): MutableList<TodoItem> {
         return mutableListOf(

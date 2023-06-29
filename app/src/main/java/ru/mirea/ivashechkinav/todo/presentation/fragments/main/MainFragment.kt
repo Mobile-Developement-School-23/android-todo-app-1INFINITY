@@ -11,6 +11,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
@@ -47,6 +48,9 @@ class MainFragment : Fragment() {
         lifecycleScope.launch {
             vm.effect.collect {
                 when (it) {
+                    is MainViewModel.EffectUi.ShowSnackbar -> {
+                        Snackbar.make(binding.root, it.message, Snackbar.LENGTH_SHORT).show()
+                    }
                     is MainViewModel.EffectUi.ToTaskFragmentUpdate -> {
                         val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate(
                             taskId = it.todoItemId

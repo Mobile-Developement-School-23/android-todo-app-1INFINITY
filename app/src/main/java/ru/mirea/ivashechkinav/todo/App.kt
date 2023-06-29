@@ -73,6 +73,6 @@ class App : Application() {
 
         const val BASE_URL = "https://beta.mrdekk.ru/todobackend/"
         const val API_KEY_NAME = "Authorization"
-        const val API_KEY_VALUE = "Bearer "
+        const val API_KEY_VALUE = "Bearer sanjakate"
     }
 }

@@ -7,14 +7,12 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
+import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainViewModel
 import java.util.*
@@ -84,9 +82,15 @@ class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
                         val newItem = validateSaveTask() ?: return@collect
 
                         if (uiState.value.id == null) {
-                            repository.addItem(newItem)
+                            repository.addItem(newItem).collectLatest {
+                                if (it is ResultData.Failure)
+                                    setEffect { EffectUi.ShowSnackbar(message = it.message) }
+                            }
                         } else {
-                            repository.updateItem(newItem)
+                            repository.updateItem(newItem).collectLatest {
+                                if (it is ResultData.Failure)
+                                    setEffect { EffectUi.ShowSnackbar(message = it.message) }
+                            }
                         }
                         setEffect { EffectUi.ToBackFragment }
                     }
@@ -125,17 +129,26 @@ class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
                         }
                     }
                     is EventUi.OnTodoItemIdLoaded -> {
-                        val todoItem = repository.getItemById(event.todoItemId) ?: return@collect
-                        setState {
-                            copy(
-                                id = todoItem.id,
-                                text = todoItem.text,
-                                importance = todoItem.importance,
-                                deadlineTimestamp = todoItem.deadlineTimestamp,
-                                isComplete = todoItem.isComplete,
-                                creationTimestamp = todoItem.creationTimestamp
-                            )
+                        repository.getItemById(event.todoItemId).collectLatest {
+                            when(it) {
+                                is ResultData.Failure -> setEffect { EffectUi.ShowSnackbar(message = it.message) }
+                                is ResultData.Success -> {
+                                    val todoItem = it.value!!
+                                    setState {
+                                        copy(
+                                            id = todoItem.id,
+                                            text = todoItem.text,
+                                            importance = todoItem.importance,
+                                            deadlineTimestamp = todoItem.deadlineTimestamp,
+                                            isComplete = todoItem.isComplete,
+                                            creationTimestamp = todoItem.creationTimestamp
+                                        )
+                                    }
+                                }
+                                else -> {}
+                            }
                         }
+
                     }
                     else -> {
                         throw UnsupportedOperationException("Unknown event class: ${event::class.java.simpleName}")
