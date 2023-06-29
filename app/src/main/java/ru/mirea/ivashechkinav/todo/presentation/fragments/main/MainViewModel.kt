@@ -100,18 +100,15 @@ class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
                     is EventUi.OnItemSwipeToCheck -> {
                         val itemChecked = event.todoItem
                             .copy(isComplete = !event.todoItem.isComplete)
-                        repository.updateItem(itemChecked)
+                        repository.updateItem(itemChecked).CheckFailure()
                     }
                     is EventUi.OnItemCheckedChange -> {
                         val itemChecked = event.todoItem
                             .copy(isComplete = !event.todoItem.isComplete)
-                        repository.updateItem(itemChecked)
+                        repository.updateItem(itemChecked).CheckFailure()
                     }
                     is EventUi.OnItemSwipeToDelete -> {
-                        repository.deleteItemById(event.todoItem.id).collectLatest {
-                            if (it is ResultData.Failure)
-                                setEffect { EffectUi.ShowSnackbar(message = it.message) }
-                        }
+                        repository.deleteItemById(event.todoItem.id).CheckFailure()
                     }
                     is EventUi.OnFloatingButtonClick -> {
                         setEffect { EffectUi.ToTaskFragmentCreate }
@@ -123,7 +120,10 @@ class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
             }
         }
     }
-
+    private fun <T> ResultData<T>.CheckFailure() {
+        if(this is ResultData.Failure)
+            setEffect { EffectUi.ShowSnackbar(this.message) }
+    }
     companion object {
         val Factory: ViewModelProvider.Factory = viewModelFactory {
             initializer {
