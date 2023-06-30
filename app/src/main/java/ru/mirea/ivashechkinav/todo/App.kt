@@ -29,16 +29,6 @@ class App : Application() {
         val todoDao = provideDao()
         val api = provideRetrofitApi()
         val revisionRepository = SharePrefsRevisionRepositoryImpl(this.applicationContext)
-//        GlobalScope.launch(Dispatchers.IO) {
-//
-//            try{
-//                val result = api.getAll()
-//                result
-//            } catch (e: Exception) {
-//                e
-//            }
-//
-//        }
         repository = TodoItemsRepositoryImpl(todoDao, api, revisionRepository)
     }
 

@@ -61,6 +61,13 @@ class MainFragment : Fragment() {
                         val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate()
                         findNavController().navigate(action)
                     }
+                    is MainViewModel.EffectUi.ShowSnackbarWithPullRetry -> {
+                        val mySnackbar = Snackbar.make(binding.root, "Произошла ошибка при загрузке списка из интернета", Snackbar.LENGTH_LONG)
+                        mySnackbar.setAction("Повторить") {
+                            vm.setEvent(MainViewModel.EventUi.OnSnackBarPullRetryButtonClicked)
+                        }
+                        mySnackbar.show()
+                    }
                 }
             }
         }

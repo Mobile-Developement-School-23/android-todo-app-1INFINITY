@@ -13,10 +13,9 @@ import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
-import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskViewModel
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
+class MainViewModel(val repository: TodoItemsRepository) : ViewModel() {
     sealed class EventUi {
         data class OnVisibleChange(val isFilterCompleted: Boolean) : EventUi()
         data class OnItemSelected(val todoItem: TodoItem) : EventUi()
@@ -24,12 +23,14 @@ class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
         data class OnItemSwipeToDelete(val todoItem: TodoItem) : EventUi()
         data class OnItemSwipeToCheck(val todoItem: TodoItem) : EventUi()
         object OnFloatingButtonClick : EventUi()
+        object OnSnackBarPullRetryButtonClicked : EventUi()
     }
 
     sealed class EffectUi {
         data class ShowSnackbar(val message: String) : EffectUi()
         data class ToTaskFragmentUpdate(val todoItemId: String) : EffectUi()
         object ToTaskFragmentCreate : EffectUi()
+        object ShowSnackbarWithPullRetry : EffectUi()
     }
 
     data class UiState(
@@ -62,6 +63,9 @@ class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
         repository.getTodoItemsFlowWith(isChecked = it)
     }
     init {
+        viewModelScope.launch {
+            pullItemsFromServer()
+        }
         viewModelScope.launch {
             itemsFlow.collect { list ->
                 val count = repository.getCountOfCompletedItems()
@@ -100,19 +104,20 @@ class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
                     is EventUi.OnItemSwipeToCheck -> {
                         val itemChecked = event.todoItem
                             .copy(isComplete = !event.todoItem.isComplete)
-                        repository.updateItem(itemChecked).CheckFailure()
+                        repository.updateItem(itemChecked).checkFailure()
                     }
                     is EventUi.OnItemCheckedChange -> {
                         val itemChecked = event.todoItem
                             .copy(isComplete = !event.todoItem.isComplete)
-                        repository.updateItem(itemChecked).CheckFailure()
+                        repository.updateItem(itemChecked).checkFailure()
                     }
                     is EventUi.OnItemSwipeToDelete -> {
-                        repository.deleteItemById(event.todoItem.id).CheckFailure()
+                        repository.deleteItemById(event.todoItem.id).checkFailure()
                     }
                     is EventUi.OnFloatingButtonClick -> {
                         setEffect { EffectUi.ToTaskFragmentCreate }
                     }
+                    is EventUi.OnSnackBarPullRetryButtonClicked -> pullItemsFromServer()
                     else -> {
                         throw UnsupportedOperationException("Unknown event class: ${event::class.java.simpleName}")
                     }
@@ -120,7 +125,13 @@ class MainViewModel(repository: TodoItemsRepository) : ViewModel() {
             }
         }
     }
-    private fun <T> ResultData<T>.CheckFailure() {
+    private suspend fun pullItemsFromServer() {
+        val result = repository.pullItemsFromServer()
+        if(result is ResultData.Failure) {
+            setEffect { EffectUi.ShowSnackbarWithPullRetry }
+        }
+    }
+    private fun <T> ResultData<T>.checkFailure() {
         if(this is ResultData.Failure)
             setEffect { EffectUi.ShowSnackbar(this.message) }
     }
