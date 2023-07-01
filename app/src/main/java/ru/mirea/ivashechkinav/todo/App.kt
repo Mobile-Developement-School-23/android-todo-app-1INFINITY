@@ -73,9 +73,9 @@ class App : Application(), Configuration.Provider {
             .build()
         val periodicRefreshRequest = PeriodicWorkRequest.Builder(
             RepeatRequestWorker::class.java,
+            8,
+            TimeUnit.HOURS,
             15,
-            TimeUnit.MINUTES,
-            0,
             TimeUnit.MINUTES
         )
             .setConstraints(constraints)
