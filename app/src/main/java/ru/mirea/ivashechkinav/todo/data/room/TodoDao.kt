@@ -10,6 +10,9 @@ import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 interface TodoDao {
 
     @Query("SELECT * FROM todoItems")
+    fun getAll(): List<TodoItem>
+
+    @Query("SELECT * FROM todoItems")
     fun getAllFlow(): Flow<List<TodoItem>>
 
     @Query("SELECT * FROM todoItems WHERE isComplete = :isChecked")

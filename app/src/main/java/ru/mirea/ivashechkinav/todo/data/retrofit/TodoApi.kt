@@ -30,6 +30,12 @@ interface TodoApi {
         @Path("id") id: String,
     ): NWResponse
 
+    @PATCH("list")
+    suspend fun patch(
+        @Header(LAST_REVISION) revision: Int,
+        @Body listRequest: NWRequestList
+    ): NWResponseList
+
     companion object {
         const val LAST_REVISION = "X-Last-Known-Revision"
     }

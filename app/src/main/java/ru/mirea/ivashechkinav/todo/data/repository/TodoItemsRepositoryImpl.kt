@@ -168,6 +168,17 @@ class TodoItemsRepositoryImpl(
             return@retryWithAttempts ResultData.success()
         }
     }
+    override suspend fun patchItemsToServer(): ResultData<Nothing> = withContext(Dispatchers.IO) {
+        retryWithAttempts(MAX_ATTEMPTS, "Ошибка при загрузке локальных изменения на сервер") {
+            val revision = revisionRepository.getLastRevision()
+            val roomItems = todoDao.getAll().map { it.toNetworkItem() }
+            val nwRequestList = NWRequestList(
+                list = roomItems
+            )
+            val response = todoApi.patch(revision, nwRequestList)
+            return@retryWithAttempts ResultData.success()
+        }
+    }
 
     private fun generateItems(): MutableList<TodoItem> {
         return mutableListOf(

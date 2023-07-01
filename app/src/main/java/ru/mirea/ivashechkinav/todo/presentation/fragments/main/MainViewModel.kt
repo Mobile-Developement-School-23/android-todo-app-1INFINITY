@@ -72,7 +72,9 @@ class MainViewModel(val repository: TodoItemsRepository, val networkChangeReceiv
                     setEffect { EffectUi.ShowSnackbar("Нет соединения с интернетом") }
                 } else {
                     setEffect { EffectUi.ShowSnackbar("Cоединение с интернетом появилось") }
-                    pullItemsFromServer()
+                    val result = repository.patchItemsToServer()
+                    if(result is ResultData.Failure)
+                        pullItemsFromServer()
                 }
             }
         }

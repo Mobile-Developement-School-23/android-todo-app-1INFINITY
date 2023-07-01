@@ -21,4 +21,6 @@ interface TodoItemsRepository {
     suspend fun pullItemsFromServer(): ResultData<Nothing>
 
     fun getTodoItemsFlow(): Flow<List<TodoItem>>
+
+    suspend fun patchItemsToServer(): ResultData<Nothing>
 }
