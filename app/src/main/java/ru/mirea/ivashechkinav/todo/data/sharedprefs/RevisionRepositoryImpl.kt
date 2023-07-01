@@ -17,8 +17,17 @@ class SharePrefsRevisionRepositoryImpl(private val applicationContext: Context):
         sharedPreferences.edit().putInt(KEY_REVISION, revision).apply()
     }
 
+    override fun hasLocalChanges(): Boolean {
+        return sharedPreferences.getBoolean(KEY_CHANGE, false)
+    }
+
+    override fun editLocalChanges(isSomethingChanged: Boolean) {
+        sharedPreferences.edit().putBoolean(KEY_CHANGE, isSomethingChanged).apply()
+    }
+
     companion object {
         private const val PREF_NAME = "RevisionPrefs"
         private const val KEY_REVISION = "revision"
+        private const val KEY_CHANGE = "change"
     }
 }

@@ -21,16 +21,6 @@ class TodoItemsRepositoryImpl(
         const val MAX_ATTEMPTS = 3
     }
 
-    init {
-        GlobalScope.launch(Dispatchers.IO) {
-            todoDao.deleteAll()
-            //todoDao.save(generateItems())
-            val response = todoApi.getAll()
-            todoDao.save(response.list!!.map { it.toTodoItem()!! })
-            revisionRepository.setRevision(response.revision!!)
-        }
-    }
-
     suspend fun <T> retryWithAttempts(
         attempts: Int,
         errorMessage: String,
@@ -72,7 +62,7 @@ class TodoItemsRepositoryImpl(
                 }
             }
         } else {
-            return "Неизвестная ошибка"
+            return "Нету соединения с интернетом"
         }
     }
     override suspend fun addItem(item: TodoItem): ResultData<Nothing> = withContext(Dispatchers.IO) {
@@ -87,7 +77,7 @@ class TodoItemsRepositoryImpl(
             val response = todoApi.add(revision = lastRevision, itemRequest = request)
             revisionRepository.setRevision(response.revision!!)
             return@retryWithAttempts ResultData.success<Nothing>()
-        }
+        }.also { if(it is ResultData.Failure) revisionRepository.editLocalChanges(true) }
     }
 
     override suspend fun deleteItemById(id: String): ResultData<Nothing> = withContext(Dispatchers.IO) {
@@ -97,7 +87,7 @@ class TodoItemsRepositoryImpl(
             val response = todoApi.delete(revision = lastRevision, id = id)
             revisionRepository.setRevision(response.revision!!)
             return@retryWithAttempts ResultData.success<Nothing>()
-        }
+        }.also { if(it is ResultData.Failure) revisionRepository.editLocalChanges(true) }
     }
 
     override fun getTodoItemsFlow(): Flow<List<TodoItem>> {
@@ -124,8 +114,8 @@ class TodoItemsRepositoryImpl(
                 val response =
                     todoApi.update(revision = lastRevision, id = item.id, itemRequest = nwRequest)
                 revisionRepository.setRevision(response.revision!!)
-                return@retryWithAttempts ResultData.success()
-            }
+                return@retryWithAttempts ResultData.success<Nothing>()
+            }.also { if(it is ResultData.Failure) revisionRepository.editLocalChanges(true) }
         }
         return@withContext ResultData.failure("Ошибка при изменении дела")
     }
@@ -165,12 +155,16 @@ class TodoItemsRepositoryImpl(
             } ?: throw IllegalArgumentException("List from server can not be null ")
 
             todoDao.save(newList)
-            return@retryWithAttempts ResultData.success()
-        }
+            revisionRepository.editLocalChanges(false)
+            return@retryWithAttempts ResultData.success<Nothing>()
+        }.also { if(it is ResultData.Success) revisionRepository.editLocalChanges(false) }
     }
     override suspend fun patchItemsToServer(): ResultData<Nothing> = withContext(Dispatchers.IO) {
         retryWithAttempts(MAX_ATTEMPTS, "Ошибка при загрузке локальных изменения на сервер") {
-            val revision = revisionRepository.getLastRevision()
+            //PATCH перезаписывает все, что было в репе(условие такое)
+            if (!revisionRepository.hasLocalChanges())
+                return@retryWithAttempts ResultData.failure("Нету локальных изменений")
+            val revision = todoApi.getAll().revision!!
             val roomItems = todoDao.getAll().map { it.toNetworkItem() }
             val nwRequestList = NWRequestList(
                 list = roomItems
