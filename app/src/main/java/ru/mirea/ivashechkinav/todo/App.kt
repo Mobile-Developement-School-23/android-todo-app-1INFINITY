@@ -1,23 +1,17 @@
 package ru.mirea.ivashechkinav.todo
 
 import android.app.Application
-import android.content.Context
 import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.util.Log
 import androidx.room.Room
 import androidx.work.*
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
-import retrofit2.create
 import ru.mirea.ivashechkinav.todo.data.repository.TodoItemsRepositoryImpl
 import ru.mirea.ivashechkinav.todo.data.retrofit.TodoApi
 import ru.mirea.ivashechkinav.todo.data.room.AppDatabase
@@ -25,13 +19,14 @@ import ru.mirea.ivashechkinav.todo.data.room.TodoDao
 import ru.mirea.ivashechkinav.todo.data.sharedprefs.SharePrefsRevisionRepositoryImpl
 import ru.mirea.ivashechkinav.todo.data.workmanager.MyWorkerFactory
 import ru.mirea.ivashechkinav.todo.data.workmanager.RepeatRequestWorker
-import ru.mirea.ivashechkinav.todo.domain.receiver.NetworkChangeReceiver
+import ru.mirea.ivashechkinav.todo.presentation.receiver.NetworkChangeReceiver
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 import java.util.concurrent.TimeUnit
 
 class App : Application(), Configuration.Provider {
 
     lateinit var repository: TodoItemsRepository
+    lateinit var networkChangeReceiver: NetworkChangeReceiver
 
     override fun onCreate() {
         super.onCreate()
@@ -39,8 +34,8 @@ class App : Application(), Configuration.Provider {
         val api = provideRetrofitApi()
         val revisionRepository = SharePrefsRevisionRepositoryImpl(this.applicationContext)
         repository = TodoItemsRepositoryImpl(todoDao, api, revisionRepository)
+        networkChangeReceiver = NetworkChangeReceiver(this)
         schedule()
-        registerConnectivityListener()
     }
 
     private fun provideDao(): TodoDao {
@@ -90,11 +85,6 @@ class App : Application(), Configuration.Provider {
             ExistingPeriodicWorkPolicy.UPDATE,
             periodicRefreshRequest
         )
-    }
-    private fun registerConnectivityListener() {
-        val intentFilter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
-        val networkChangeReceiver = NetworkChangeReceiver(repository)
-        registerReceiver(networkChangeReceiver, intentFilter)
     }
     override fun getWorkManagerConfiguration(): Configuration {
         return Configuration.Builder()

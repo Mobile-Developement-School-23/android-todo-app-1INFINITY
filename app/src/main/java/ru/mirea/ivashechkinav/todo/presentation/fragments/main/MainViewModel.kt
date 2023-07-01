@@ -13,9 +13,10 @@ import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
+import ru.mirea.ivashechkinav.todo.presentation.receiver.NetworkChangeReceiver
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class MainViewModel(val repository: TodoItemsRepository) : ViewModel() {
+class MainViewModel(val repository: TodoItemsRepository, val networkChangeReceiver: NetworkChangeReceiver) : ViewModel() {
     sealed class EventUi {
         data class OnVisibleChange(val isFilterCompleted: Boolean) : EventUi()
         data class OnItemSelected(val todoItem: TodoItem) : EventUi()
@@ -65,6 +66,15 @@ class MainViewModel(val repository: TodoItemsRepository) : ViewModel() {
     init {
         viewModelScope.launch {
             pullItemsFromServer()
+
+            networkChangeReceiver.stateFlow.collectLatest {isConnected ->
+                if(!isConnected) {
+                    setEffect { EffectUi.ShowSnackbar("Нет соединения с интернетом") }
+                } else {
+                    setEffect { EffectUi.ShowSnackbar("Cоединение с интернетом появилось") }
+                    pullItemsFromServer()
+                }
+            }
         }
         viewModelScope.launch {
             itemsFlow.collect { list ->
@@ -140,8 +150,11 @@ class MainViewModel(val repository: TodoItemsRepository) : ViewModel() {
             initializer {
                 val repository =
                     (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as App).repository
+                val networkChangeReceiver =
+                    (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as App).networkChangeReceiver
                 MainViewModel(
                     repository = repository,
+                    networkChangeReceiver = networkChangeReceiver,
                 )
             }
         }
