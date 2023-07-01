@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:drawable="@drawable/checkbox_checked"
+        android:tint="@color/color_light_green"
+        android:state_checked="true" />
+    <item
+        android:drawable="@drawable/checkbox_unchecked_normal"
+        android:tint="@color/support_light_separator"
+        android:state_checked="false"
+        />
+</selector>

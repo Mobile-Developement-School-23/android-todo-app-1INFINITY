@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@color/back_light_secondary">
+
+    <CheckBox
+        android:id="@+id/cbIsComplete"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:button="@drawable/custom_checkbox_selector"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="14dp"
+        android:orientation="vertical"
+        android:paddingVertical="12dp"
+        android:paddingLeft="3dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/imInfo"
+        app:layout_constraintStart_toEndOf="@+id/imImportance"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/tvTodoText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="3"
+            android:textColor="@color/label_light_primary"
+            android:textSize="16sp"
+            tools:text="@string/item_text" />
+
+        <TextView
+            android:id="@+id/tvDeadlineText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="дата"
+            android:textColor="@android:color/tertiary_text_light"
+            android:textSize="14sp"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/imInfo"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:layout_marginEnd="16dp"
+        android:contentDescription="@string/content_description_task_info"
+        android:src="@drawable/ic_info"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@android:color/tertiary_text_light" />
+
+    <ImageView
+        android:id="@+id/imImportance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="14dp"
+        android:visibility="gone"
+        app:layout_constraintStart_toEndOf="@+id/cbIsComplete"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/ic_importance_low"
+        tools:visibility="visible" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
