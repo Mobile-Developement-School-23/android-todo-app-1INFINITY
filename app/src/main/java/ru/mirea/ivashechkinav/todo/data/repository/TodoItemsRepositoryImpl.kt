@@ -46,16 +46,16 @@ class TodoItemsRepositoryImpl(
         if (e is HttpException) {
             return when (e.code()) {
                 400 -> {
-                   "400"
+                   "Ошибка на сервере с ревизией. Сообщите в поддержку"
                 }
                 401 -> {
-                    "401"
+                    "Ошибка на сервере с авторизацией. Сообщите в поддержку"
                 }
                 404 -> {
-                   "404"
+                    "Элемента нет на сервере. Сообщите в поддержку"
                 }
                 500 -> {
-                   "500"
+                   "Неизвестная ошибка сервера"
                 }
                 else -> {
                  "Неизвестная Http ошибка"
@@ -170,6 +170,7 @@ class TodoItemsRepositoryImpl(
                 list = roomItems
             )
             val response = todoApi.patch(revision, nwRequestList)
+            revisionRepository.setRevision(response.revision!!)
             return@retryWithAttempts ResultData.success()
         }
     }
