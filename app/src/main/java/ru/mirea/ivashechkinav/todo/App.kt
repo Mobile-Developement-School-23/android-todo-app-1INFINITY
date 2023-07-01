@@ -2,6 +2,8 @@ package ru.mirea.ivashechkinav.todo
 
 import android.app.Application
 import android.content.Context
+import android.content.IntentFilter
+import android.net.ConnectivityManager
 import android.util.Log
 import androidx.room.Room
 import androidx.work.*
@@ -23,6 +25,7 @@ import ru.mirea.ivashechkinav.todo.data.room.TodoDao
 import ru.mirea.ivashechkinav.todo.data.sharedprefs.SharePrefsRevisionRepositoryImpl
 import ru.mirea.ivashechkinav.todo.data.workmanager.MyWorkerFactory
 import ru.mirea.ivashechkinav.todo.data.workmanager.RepeatRequestWorker
+import ru.mirea.ivashechkinav.todo.domain.receiver.NetworkChangeReceiver
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 import java.util.concurrent.TimeUnit
 
@@ -37,6 +40,7 @@ class App : Application(), Configuration.Provider {
         val revisionRepository = SharePrefsRevisionRepositoryImpl(this.applicationContext)
         repository = TodoItemsRepositoryImpl(todoDao, api, revisionRepository)
         schedule()
+        registerConnectivityListener()
     }
 
     private fun provideDao(): TodoDao {
@@ -86,6 +90,11 @@ class App : Application(), Configuration.Provider {
             ExistingPeriodicWorkPolicy.UPDATE,
             periodicRefreshRequest
         )
+    }
+    private fun registerConnectivityListener() {
+        val intentFilter = IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION)
+        val networkChangeReceiver = NetworkChangeReceiver(repository)
+        registerReceiver(networkChangeReceiver, intentFilter)
     }
     override fun getWorkManagerConfiguration(): Configuration {
         return Configuration.Builder()
