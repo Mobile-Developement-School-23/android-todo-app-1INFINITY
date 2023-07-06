@@ -14,9 +14,10 @@ import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 import ru.mirea.ivashechkinav.todo.presentation.receiver.NetworkChangeReceiver
+import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class MainViewModel(val repository: TodoItemsRepository, val networkChangeReceiver: NetworkChangeReceiver) : ViewModel() {
+class MainViewModel @Inject constructor(val repository: TodoItemsRepository, val networkChangeReceiver: NetworkChangeReceiver) : ViewModel() {
     sealed class EventUi {
         data class OnVisibleChange(val isFilterCompleted: Boolean) : EventUi()
         data class OnItemSelected(val todoItem: TodoItem) : EventUi()
@@ -146,19 +147,5 @@ class MainViewModel(val repository: TodoItemsRepository, val networkChangeReceiv
     private fun <T> ResultData<T>.checkFailure() {
         if(this is ResultData.Failure)
             setEffect { EffectUi.ShowSnackbar(this.message) }
-    }
-    companion object {
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val repository =
-                    (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as App).repository
-                val networkChangeReceiver =
-                    (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as App).networkChangeReceiver
-                MainViewModel(
-                    repository = repository,
-                    networkChangeReceiver = networkChangeReceiver,
-                )
-            }
-        }
     }
 }

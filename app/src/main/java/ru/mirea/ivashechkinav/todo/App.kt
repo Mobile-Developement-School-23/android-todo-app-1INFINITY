@@ -2,21 +2,23 @@ package ru.mirea.ivashechkinav.todo
 
 import android.app.Application
 import android.util.Log
-import androidx.work.*
+import androidx.work.Configuration
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequest
+import androidx.work.WorkManager
 import ru.mirea.ivashechkinav.todo.data.workmanager.MyWorkerFactory
 import ru.mirea.ivashechkinav.todo.data.workmanager.RepeatRequestWorker
 import ru.mirea.ivashechkinav.todo.di.components.AppComponent
 import ru.mirea.ivashechkinav.todo.di.components.DaggerAppComponent
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
-import ru.mirea.ivashechkinav.todo.presentation.receiver.NetworkChangeReceiver
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 class App : Application(), Configuration.Provider {
     @Inject
     lateinit var repository: TodoItemsRepository
-
-    lateinit var networkChangeReceiver: NetworkChangeReceiver
 
     lateinit var appComponent: AppComponent
         private set
@@ -26,7 +28,6 @@ class App : Application(), Configuration.Provider {
 
         appComponent = DaggerAppComponent.factory().create(appContext = this.applicationContext)
         appComponent.inject(this)
-        networkChangeReceiver = NetworkChangeReceiver(this)
         schedule()
     }
 

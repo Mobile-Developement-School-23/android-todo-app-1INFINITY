@@ -15,8 +15,9 @@ import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 import java.util.*
+import javax.inject.Inject
 
-class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
+class TaskViewModel @Inject constructor(repository: TodoItemsRepository) : ViewModel() {
     sealed class EventUi {
         object OnCancelButtonClicked : EventUi()
         object OnSaveButtonClicked : EventUi()
@@ -166,16 +167,5 @@ class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
             creationTimestamp = currentTodoItem.creationTimestamp ?: currentTime,
             changeTimestamp = currentTime
         )
-    }
-
-    companion object {
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val repository = (this[APPLICATION_KEY] as App).repository
-                TaskViewModel(
-                    repository = repository,
-                )
-            }
-        }
     }
 }

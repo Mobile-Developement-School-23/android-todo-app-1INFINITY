@@ -6,6 +6,7 @@ import dagger.BindsInstance
 import dagger.Component
 import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.di.modules.DataModule
+import ru.mirea.ivashechkinav.todo.di.modules.ViewModelModule
 import javax.inject.Qualifier
 import javax.inject.Scope
 
@@ -17,7 +18,7 @@ annotation class AppScope
 annotation class AppContext
 
 @AppScope
-@Component(modules = [DataModule::class])
+@Component(modules = [DataModule::class, ViewModelModule::class])
 interface AppComponent {
 
     fun activityComponentFactory(): ActivityComponent.Factory

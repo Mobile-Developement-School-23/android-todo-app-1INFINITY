@@ -13,6 +13,7 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
@@ -27,14 +28,20 @@ import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.databinding.FragmentTaskBinding
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
+import ru.mirea.ivashechkinav.todo.presentation.MainActivity
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainViewModel
 import ru.mirea.ivashechkinav.todo.presentation.utils.textChanges
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.inject.Inject
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class TaskFragment : Fragment() {
 
-    private val vm: TaskViewModel by viewModels { TaskViewModel.Factory }
+    @Inject
+    lateinit var viewModelFactory: ViewModelProvider.Factory
+    private val vm: TaskViewModel by viewModels { viewModelFactory }
+
     private lateinit var binding: FragmentTaskBinding
     private val args: TaskFragmentArgs by navArgs()
     private var popupMenu: PopupMenu? = null
@@ -44,7 +51,11 @@ class TaskFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         binding = FragmentTaskBinding.inflate(inflater, container, false)
-
+        (requireActivity() as MainActivity)
+            .activityComponent
+            .taskFragmentComponentFactory()
+            .create()
+            .inject(this)
         loadArgs()
         initEditTextObserve()
         initButtons()
