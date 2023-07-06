@@ -10,8 +10,9 @@ import ru.mirea.ivashechkinav.todo.data.room.TodoDao
 import ru.mirea.ivashechkinav.todo.data.sharedprefs.RevisionRepository
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
+import javax.inject.Inject
 
-class TodoItemsRepositoryImpl(
+class TodoItemsRepositoryImpl @Inject constructor(
     private val todoDao: TodoDao,
     private val todoApi: TodoApi,
     private val revisionRepository: RevisionRepository

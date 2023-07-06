@@ -13,5 +13,4 @@ import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun getTodoDao(): TodoDao
-
 }
