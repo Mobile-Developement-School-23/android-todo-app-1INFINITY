@@ -28,27 +28,6 @@ class TodoItemsRepositoryImpl @Inject constructor(
     private val todoApi: TodoApi,
 ) : TodoItemsRepository {
 
-//    suspend fun <T> retryWithAttempts(
-//        attempts: Int,
-//        errorMessage: String,
-//        block: suspend () -> ResultData<T>
-//    ): ResultData<T> {
-//        var remainingAttempts = attempts
-//        var error: Exception? = null
-//        while (remainingAttempts > 0) {
-//            try {
-//                return block()
-//            } catch (e: Exception) {
-//                error = e
-//                remainingAttempts--
-//            }
-//        }
-//        return if (error != null)
-//            ResultData.failure(getErrorMessage(error))
-//        else
-//            ResultData.failure(errorMessage)
-//    }
-
     override suspend fun addItem(item: TodoItem): ResultData<Unit> =
         withContext(Dispatchers.IO) {
             return@withContext try {

@@ -19,6 +19,7 @@ import ru.mirea.ivashechkinav.todo.core.DuplicateItemException
 import ru.mirea.ivashechkinav.todo.core.NetworkException
 import ru.mirea.ivashechkinav.todo.core.ServerSideException
 import ru.mirea.ivashechkinav.todo.core.TodoItemNotFoundException
+import ru.mirea.ivashechkinav.todo.core.retryWithAttempts
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
@@ -27,7 +28,7 @@ import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainViewModel
 import java.util.*
 import javax.inject.Inject
 
-class TaskViewModel @Inject constructor(repository: TodoItemsRepository) : ViewModel() {
+class TaskViewModel @Inject constructor(private val repository: TodoItemsRepository) : ViewModel() {
     sealed class EventUi {
         object OnCancelButtonClicked : EventUi()
         object OnSaveButtonClicked : EventUi()
@@ -95,16 +96,16 @@ class TaskViewModel @Inject constructor(repository: TodoItemsRepository) : ViewM
                         val newItem = validateSaveTask() ?: return@collect
 
                         if (uiState.value.id == null) {
-                            repository.addItem(newItem)
+                            retryWithAttempts{ repository.addItem(newItem) }
                         } else {
-                            repository.updateItem(newItem)
+                            retryWithAttempts{ repository.updateItem(newItem) }
                         }
                         setEffect { EffectUi.ToBackFragment }
                     }
                     is EventUi.OnDeleteButtonClicked -> {
                         val currentTodoItem = uiState.value
                         currentTodoItem.id?.let {
-                            repository.deleteItemById(it)
+                            retryWithAttempts{ repository.deleteItemById(it) }
                         }
                         setEffect { EffectUi.ToBackFragment }
                     }
@@ -136,7 +137,7 @@ class TaskViewModel @Inject constructor(repository: TodoItemsRepository) : ViewM
                         }
                     }
                     is EventUi.OnTodoItemIdLoaded -> {
-                        val result = repository.getItemById(event.todoItemId)
+                        val result = retryWithAttempts { repository.getItemById(event.todoItemId) }
                         if (result is ResultData.Success){
                             val todoItem = result.value ?: return@collect
                             setState {

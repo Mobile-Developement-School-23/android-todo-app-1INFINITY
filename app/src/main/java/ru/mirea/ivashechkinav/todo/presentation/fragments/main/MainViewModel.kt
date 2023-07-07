@@ -2,10 +2,7 @@ package ru.mirea.ivashechkinav.todo.presentation.fragments.main
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -13,12 +10,12 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
-import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
 import ru.mirea.ivashechkinav.todo.core.DuplicateItemException
 import ru.mirea.ivashechkinav.todo.core.NetworkException
 import ru.mirea.ivashechkinav.todo.core.ServerSideException
 import ru.mirea.ivashechkinav.todo.core.TodoItemNotFoundException
+import ru.mirea.ivashechkinav.todo.core.retryWithAttempts
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
@@ -26,7 +23,10 @@ import ru.mirea.ivashechkinav.todo.presentation.receiver.NetworkChangeReceiver
 import javax.inject.Inject
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class MainViewModel @Inject constructor(val repository: TodoItemsRepository, val networkChangeReceiver: NetworkChangeReceiver) : ViewModel() {
+class MainViewModel @Inject constructor(
+    private val repository: TodoItemsRepository,
+    private val networkChangeReceiver: NetworkChangeReceiver
+) : ViewModel() {
     sealed class EventUi {
         data class OnVisibleChange(val isFilterCompleted: Boolean) : EventUi()
         data class OnItemSelected(val todoItem: TodoItem) : EventUi()
@@ -49,6 +49,7 @@ class MainViewModel @Inject constructor(val repository: TodoItemsRepository, val
         val todoItems: List<TodoItem> = listOf(),
         val isFilterCompleted: Boolean = false
     )
+
     private val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
         Log.e("Coroutine", "Error: ", throwable)
         CoroutineScope(context).launch { handleException(throwable) }
@@ -73,21 +74,23 @@ class MainViewModel @Inject constructor(val repository: TodoItemsRepository, val
         val effectValue = builder()
         viewModelScope.launch { _effect.send(effectValue) }
     }
+
     private val visibleStateFlow = MutableStateFlow(false)
     private val itemsFlow = visibleStateFlow.flatMapLatest {
         repository.getTodoItemsFlowWith(isChecked = it)
     }
+
     init {
         viewModelScope.launch(exceptionHandler) {
             pullItemsFromServer()
 
-            networkChangeReceiver.stateFlow.collectLatest {isConnected ->
-                if(!isConnected) {
+            networkChangeReceiver.stateFlow.collectLatest { isConnected ->
+                if (!isConnected) {
                     setEffect { EffectUi.ShowSnackbar("Нет соединения с интернетом") }
                 } else {
                     setEffect { EffectUi.ShowSnackbar("Cоединение с интернетом появилось") }
-                    val result = repository.patchItemsToServer()
-                    if(result is ResultData.Failure)
+                    val result = retryWithAttempts{ repository.patchItemsToServer() }
+                    if (result is ResultData.Failure)
                         pullItemsFromServer()
                 }
             }
@@ -123,34 +126,41 @@ class MainViewModel @Inject constructor(val repository: TodoItemsRepository, val
                             )
                         }
                     }
+
                     is EventUi.OnItemSelected -> {
                         val itemId = event.todoItem.id
                         setEffect { EffectUi.ToTaskFragmentUpdate(itemId) }
                     }
+
                     is EventUi.OnItemSwipeToCheck -> {
                         val itemChecked = event.todoItem
                             .copy(isComplete = !event.todoItem.isComplete)
-                        repository.updateItem(itemChecked)
+                        retryWithAttempts { repository.updateItem(itemChecked) }
                     }
+
                     is EventUi.OnItemCheckedChange -> {
                         val itemChecked = event.todoItem
                             .copy(isComplete = !event.todoItem.isComplete)
-                        repository.updateItem(itemChecked)
+                        retryWithAttempts { repository.updateItem(itemChecked) }
                     }
+
                     is EventUi.OnItemSwipeToDelete -> {
-                        repository.deleteItemById(event.todoItem.id)
+                        retryWithAttempts { repository.deleteItemById(event.todoItem.id) }
                     }
+
                     is EventUi.OnFloatingButtonClick -> {
                         setEffect { EffectUi.ToTaskFragmentCreate }
                     }
+
                     is EventUi.OnSnackBarPullRetryButtonClicked -> pullItemsFromServer()
                 }
             }
         }
     }
+
     private suspend fun pullItemsFromServer() {
-        val result = repository.pullItemsFromServer()
-        if(result is ResultData.Failure) {
+        val result = retryWithAttempts{ repository.pullItemsFromServer() }
+        if (result is ResultData.Failure) {
             setEffect { EffectUi.ShowSnackbarWithPullRetry }
         }
     }
@@ -165,6 +175,7 @@ class MainViewModel @Inject constructor(val repository: TodoItemsRepository, val
                 is TodoItemNotFoundException,
                 is DuplicateItemException
                 -> "Ошибка на сервере"
+
                 else -> "Неизвестная ошибка"
             }
         setEffect { EffectUi.ShowSnackbar(message = errorText) }
