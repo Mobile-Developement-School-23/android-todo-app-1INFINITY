@@ -23,14 +23,11 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
-import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.databinding.FragmentTaskBinding
-import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 import ru.mirea.ivashechkinav.todo.presentation.MainActivity
-import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainViewModel
-import ru.mirea.ivashechkinav.todo.presentation.utils.textChanges
+import ru.mirea.ivashechkinav.todo.core.textChanges
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject

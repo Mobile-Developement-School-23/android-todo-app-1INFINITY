@@ -10,8 +10,7 @@ import javax.inject.Inject
 
 class RevisionInterceptor @Inject constructor(
     private val revisionRepo: RevisionRepository
-) :
-    Interceptor {
+) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         var request = chain.request()
 

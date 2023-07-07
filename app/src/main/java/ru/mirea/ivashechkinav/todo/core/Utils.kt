@@ -1,4 +1,4 @@
-package ru.mirea.ivashechkinav.todo.presentation.utils
+package ru.mirea.ivashechkinav.todo.core
 
 import android.text.Editable
 import android.text.TextWatcher

@@ -1,19 +1,29 @@
 package ru.mirea.ivashechkinav.todo.presentation.fragments.task
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import retrofit2.HttpException
 import ru.mirea.ivashechkinav.todo.App
+import ru.mirea.ivashechkinav.todo.core.BadRequestException
+import ru.mirea.ivashechkinav.todo.core.DuplicateItemException
+import ru.mirea.ivashechkinav.todo.core.NetworkException
+import ru.mirea.ivashechkinav.todo.core.ServerSideException
+import ru.mirea.ivashechkinav.todo.core.TodoItemNotFoundException
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainViewModel
 import java.util.*
 import javax.inject.Inject
 
@@ -50,7 +60,10 @@ class TaskViewModel @Inject constructor(repository: TodoItemsRepository) : ViewM
         var creationTimestamp: Long? = null,
         val viewState: FragmentViewState = FragmentViewState.Loading
     )
-
+    private val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
+        Log.e("Coroutine", "Error: ", throwable)
+        CoroutineScope(context).launch { handleException(throwable) }
+    }
     private val _event: MutableSharedFlow<EventUi> = MutableSharedFlow()
 
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState())
@@ -72,7 +85,7 @@ class TaskViewModel @Inject constructor(repository: TodoItemsRepository) : ViewM
     }
 
     init {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             _event.collect { event ->
                 when (event) {
                     is EventUi.OnBackButtonClicked -> setEffect { EffectUi.ToBackFragment }
@@ -82,16 +95,16 @@ class TaskViewModel @Inject constructor(repository: TodoItemsRepository) : ViewM
                         val newItem = validateSaveTask() ?: return@collect
 
                         if (uiState.value.id == null) {
-                            repository.addItem(newItem).CheckFailure()
+                            repository.addItem(newItem)
                         } else {
-                            repository.updateItem(newItem).CheckFailure()
+                            repository.updateItem(newItem)
                         }
                         setEffect { EffectUi.ToBackFragment }
                     }
                     is EventUi.OnDeleteButtonClicked -> {
                         val currentTodoItem = uiState.value
                         currentTodoItem.id?.let {
-                            repository.deleteItemById(it).CheckFailure()
+                            repository.deleteItemById(it)
                         }
                         setEffect { EffectUi.ToBackFragment }
                     }
@@ -123,7 +136,7 @@ class TaskViewModel @Inject constructor(repository: TodoItemsRepository) : ViewM
                         }
                     }
                     is EventUi.OnTodoItemIdLoaded -> {
-                        val result = repository.getItemById(event.todoItemId).also { it.CheckFailure() }
+                        val result = repository.getItemById(event.todoItemId)
                         if (result is ResultData.Success){
                             val todoItem = result.value ?: return@collect
                             setState {
@@ -138,17 +151,24 @@ class TaskViewModel @Inject constructor(repository: TodoItemsRepository) : ViewM
                             }
                         }
                     }
-                    else -> {
-                        throw UnsupportedOperationException("Unknown event class: ${event::class.java.simpleName}")
-                    }
                 }
             }
         }
     }
 
-    private fun <T> ResultData<T>.CheckFailure() {
-        if (this is ResultData.Failure)
-            setEffect { EffectUi.ShowSnackbar(this.message) }
+    private fun handleException(e: Throwable) {
+        val errorText =
+            when (e) {
+                is HttpException, is NetworkException -> "Отсутствует подключение"
+
+                is ServerSideException,
+                is BadRequestException,
+                is TodoItemNotFoundException,
+                is DuplicateItemException
+                -> "Ошибка на сервере"
+                else -> "Неизвестная ошибка"
+            }
+        setEffect { EffectUi.ShowSnackbar(message = errorText) }
     }
 
     private fun validateSaveTask(): TodoItem? {
