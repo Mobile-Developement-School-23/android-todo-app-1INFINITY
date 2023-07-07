@@ -7,18 +7,17 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
+import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 import java.util.*
+import javax.inject.Inject
 
-class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
+class TaskViewModel @Inject constructor(repository: TodoItemsRepository) : ViewModel() {
     sealed class EventUi {
         object OnCancelButtonClicked : EventUi()
         object OnSaveButtonClicked : EventUi()
@@ -37,6 +36,7 @@ class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
     }
 
     sealed class EffectUi {
+        data class ShowSnackbar(val message: String) : EffectUi()
         object ToBackFragment : EffectUi()
         object ShowDatePicker : EffectUi()
     }
@@ -59,7 +59,7 @@ class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
     private val _effect: Channel<EffectUi> = Channel()
     val effect = _effect.receiveAsFlow()
 
-    fun setState(reduce: UiState.() -> UiState) {
+    private fun setState(reduce: UiState.() -> UiState) {
         val newState = uiState.value.reduce()
         _uiState.value = newState
     }
@@ -78,28 +78,20 @@ class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
                     is EventUi.OnBackButtonClicked -> setEffect { EffectUi.ToBackFragment }
                     is EventUi.OnCancelButtonClicked -> setEffect { EffectUi.ToBackFragment }
                     is EventUi.OnSaveButtonClicked -> {
-                        val currentTime = System.currentTimeMillis()
-                        val currentTodoItem = uiState.value
-                        val newItem = TodoItem(
-                            id = currentTodoItem.id ?: UUID.randomUUID().toString(),
-                            text = currentTodoItem.text ?: "",
-                            importance = currentTodoItem.importance,
-                            deadlineTimestamp = currentTodoItem.deadlineTimestamp,
-                            isComplete = currentTodoItem.isComplete,
-                            creationTimestamp = currentTodoItem.creationTimestamp ?: currentTime,
-                            changeTimestamp = currentTime
-                        )
-                        if (currentTodoItem.id == null) {
-                            repository.addItem(newItem)
+
+                        val newItem = validateSaveTask() ?: return@collect
+
+                        if (uiState.value.id == null) {
+                            repository.addItem(newItem).CheckFailure()
                         } else {
-                            repository.updateItem(newItem)
+                            repository.updateItem(newItem).CheckFailure()
                         }
                         setEffect { EffectUi.ToBackFragment }
                     }
                     is EventUi.OnDeleteButtonClicked -> {
                         val currentTodoItem = uiState.value
                         currentTodoItem.id?.let {
-                            repository.deleteItemById(it)
+                            repository.deleteItemById(it).CheckFailure()
                         }
                         setEffect { EffectUi.ToBackFragment }
                     }
@@ -131,16 +123,19 @@ class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
                         }
                     }
                     is EventUi.OnTodoItemIdLoaded -> {
-                        val todoItem = repository.getItemById(event.todoItemId) ?: return@collect
-                        setState {
-                            copy(
-                                id = todoItem.id,
-                                text = todoItem.text,
-                                importance = todoItem.importance,
-                                deadlineTimestamp = todoItem.deadlineTimestamp,
-                                isComplete = todoItem.isComplete,
-                                creationTimestamp = todoItem.creationTimestamp
-                            )
+                        val result = repository.getItemById(event.todoItemId).also { it.CheckFailure() }
+                        if (result is ResultData.Success){
+                            val todoItem = result.value ?: return@collect
+                            setState {
+                                copy(
+                                    id = todoItem.id,
+                                    text = todoItem.text,
+                                    importance = todoItem.importance,
+                                    deadlineTimestamp = todoItem.deadlineTimestamp,
+                                    isComplete = todoItem.isComplete,
+                                    creationTimestamp = todoItem.creationTimestamp
+                                )
+                            }
                         }
                     }
                     else -> {
@@ -151,14 +146,26 @@ class TaskViewModel(repository: TodoItemsRepository) : ViewModel() {
         }
     }
 
-    companion object {
-        val Factory: ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                val repository = (this[APPLICATION_KEY] as App).repository
-                TaskViewModel(
-                    repository = repository,
-                )
-            }
+    private fun <T> ResultData<T>.CheckFailure() {
+        if (this is ResultData.Failure)
+            setEffect { EffectUi.ShowSnackbar(this.message) }
+    }
+
+    private fun validateSaveTask(): TodoItem? {
+        val currentTime = System.currentTimeMillis() / 1000
+        val currentTodoItem = uiState.value
+        if (currentTodoItem.text.isNullOrEmpty()) {
+            setEffect { EffectUi.ShowSnackbar("Необходимо ввести описание дела") }
+            return null
         }
+        return TodoItem(
+            id = currentTodoItem.id ?: UUID.randomUUID().toString(),
+            text = currentTodoItem.text ?: "",
+            importance = currentTodoItem.importance,
+            deadlineTimestamp = currentTodoItem.deadlineTimestamp,
+            isComplete = currentTodoItem.isComplete,
+            creationTimestamp = currentTodoItem.creationTimestamp ?: currentTime,
+            changeTimestamp = currentTime
+        )
     }
 }

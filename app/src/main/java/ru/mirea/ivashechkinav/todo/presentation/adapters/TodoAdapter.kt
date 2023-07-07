@@ -57,11 +57,24 @@ class TodoAdapter(
     override fun getItemCount() = currentList().size
 
     override fun onBindViewHolder(holder: TodoItemViewHolder, position: Int) {
-        holder.onBind(currentList()[position])
-        holder.root.tag = position
-        holder.isCompleteCheckBox.tag = position
+        holder.apply {
+            setItemBackground(position)
+            onBind(currentList()[position])
+            root.tag = position
+            isCompleteCheckBox.tag = position
+        }
     }
-
+    private fun TodoItemViewHolder.setItemBackground(itemPosition: Int) {
+        val maxPosition = currentList().size - 1
+        when(itemPosition) {
+            0 -> {
+                this.itemView.setBackgroundResource(R.drawable.todo_item_upper_background)
+            }
+            maxPosition -> {
+                this.itemView.setBackgroundResource(R.drawable.todo_item_lower_background)
+            }
+        }
+    }
     private class DiffCallback : DiffUtil.ItemCallback<TodoItem>() {
         override fun areItemsTheSame(oldItem: TodoItem, newItem: TodoItem) =
             oldItem.id == newItem.id

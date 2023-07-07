@@ -2,7 +2,6 @@ package ru.mirea.ivashechkinav.todo.presentation.adapters
 
 import android.content.Context
 import android.graphics.Paint
-import android.graphics.drawable.Drawable
 import android.view.View
 import android.widget.CheckBox
 import android.widget.ImageView
@@ -39,39 +38,56 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
     }
 
     private fun initDeadlineDate(item: TodoItem) {
-        if(item.isComplete) {
+        val date = item.deadlineTimestamp
+        if (item.isComplete || date == null) {
             deadlineText.visibility = View.GONE
             return
         }
         val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale.getDefault())
-        deadlineText.text = dateFormat.format(item.deadlineTimestamp)
+        deadlineText.text = dateFormat.format(date)
         deadlineText.visibility = View.VISIBLE
     }
+
     private fun initCheckedState(item: TodoItem) {
         isCompleteCheckBox.isChecked = item.isComplete
         if (item.isComplete) {
             todoText.paintFlags = todoText.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-            todoText.setTextColor(ContextCompat.getColor(applicationContext, R.color.label_light_tertiary))
+            todoText.setTextColor(
+                ContextCompat.getColor(
+                    applicationContext,
+                    R.color.label_light_tertiary
+                )
+            )
 
             isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_checked)
-            isCompleteCheckBox.buttonTintList = AppCompatResources.getColorStateList(applicationContext, R.color.color_light_green)
+            isCompleteCheckBox.buttonTintList =
+                AppCompatResources.getColorStateList(applicationContext, R.color.color_light_green)
             return
         }
-        todoText.setTextColor(ContextCompat.getColor(applicationContext, R.color.label_light_primary))
+        todoText.setTextColor(
+            ContextCompat.getColor(
+                applicationContext,
+                R.color.label_light_primary
+            )
+        )
         todoText.paintFlags = todoText.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
-        if(item.importance == Importance.HIGH) {
+        if (item.importance == Importance.HIGH) {
             isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_unchecked_high)
-            isCompleteCheckBox.buttonTintList = AppCompatResources.getColorStateList(applicationContext, R.color.color_light_red)
+            isCompleteCheckBox.buttonTintList =
+                AppCompatResources.getColorStateList(applicationContext, R.color.color_light_red)
         } else {
             isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_unchecked_normal)
-            isCompleteCheckBox.buttonTintList = AppCompatResources.getColorStateList(applicationContext, R.color.support_light_separator)
+            isCompleteCheckBox.buttonTintList = AppCompatResources.getColorStateList(
+                applicationContext,
+                R.color.support_light_separator
+            )
         }
     }
 
     private fun initImportanceState(item: TodoItem) {
         when (item.importance) {
             Importance.LOW -> {
-                if(item.isComplete) {
+                if (item.isComplete) {
                     importanceIcon.visibility = View.GONE
                     return
                 }
@@ -86,7 +102,7 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
                 importanceIcon.visibility = View.GONE
             }
             Importance.HIGH -> {
-                if(item.isComplete) {
+                if (item.isComplete) {
                     importanceIcon.visibility = View.GONE
                     return
                 }

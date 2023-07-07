@@ -13,9 +13,11 @@ import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
@@ -26,30 +28,34 @@ import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.databinding.FragmentTaskBinding
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
-import ru.mirea.ivashechkinav.todo.presentation.models.TodoItemUI
+import ru.mirea.ivashechkinav.todo.presentation.MainActivity
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainViewModel
 import ru.mirea.ivashechkinav.todo.presentation.utils.textChanges
 import java.text.SimpleDateFormat
 import java.util.*
+import javax.inject.Inject
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class TaskFragment : Fragment() {
 
-    private val vm: TaskViewModel by viewModels { TaskViewModel.Factory }
+    @Inject
+    lateinit var viewModelFactory: ViewModelProvider.Factory
+    private val vm: TaskViewModel by viewModels { viewModelFactory }
+
     private lateinit var binding: FragmentTaskBinding
     private val args: TaskFragmentArgs by navArgs()
-    private lateinit var repository: TodoItemsRepository
-    private val todoItemUI = TodoItemUI()
     private var popupMenu: PopupMenu? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentTaskBinding.inflate(inflater, container, false)
-
-        repository = (requireActivity().application as App).repository
-
-
+        (requireActivity() as MainActivity)
+            .activityComponent
+            .taskFragmentComponentFactory()
+            .create()
+            .inject(this)
         loadArgs()
         initEditTextObserve()
         initButtons()
@@ -71,8 +77,11 @@ class TaskFragment : Fragment() {
             }
         }
         lifecycleScope.launch {
-            vm.effect.collect {
-                when (it) {
+            vm.effect.collect { effect ->
+                when (effect) {
+                    is TaskViewModel.EffectUi.ShowSnackbar -> {
+                        Snackbar.make(binding.root, effect.message, Snackbar.LENGTH_SHORT).show()
+                    }
                     is TaskViewModel.EffectUi.ToBackFragment -> findNavController().popBackStack()
                     is TaskViewModel.EffectUi.ShowDatePicker -> showDatePicker()
                 }
@@ -171,7 +180,7 @@ class TaskFragment : Fragment() {
                 binding.tvImportanceValue.text = currentPopupMenu.menu.getItem(2).title
             }
             else -> {
-                throw UnsupportedOperationException("Unknown Importance value: ${todoItemUI.importance}")
+                throw UnsupportedOperationException("Unknown Importance value: $importance")
             }
         }
     }

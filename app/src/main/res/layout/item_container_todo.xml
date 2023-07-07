@@ -3,7 +3,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="@color/back_light_secondary">
 
     <CheckBox
         android:id="@+id/cbIsComplete"
@@ -55,10 +56,10 @@
         android:layout_marginTop="14dp"
         android:layout_marginEnd="16dp"
         android:contentDescription="@string/content_description_task_info"
+        android:src="@drawable/ic_info"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:tint="@android:color/tertiary_text_light"
-        tools:srcCompat="@drawable/ic_info" />
+        app:tint="@android:color/tertiary_text_light" />
 
     <ImageView
         android:id="@+id/imImportance"

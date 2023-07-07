@@ -1,39 +1,102 @@
 package ru.mirea.ivashechkinav.todo.data.repository
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+import retrofit2.HttpException
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
+import ru.mirea.ivashechkinav.todo.data.retrofit.*
+import ru.mirea.ivashechkinav.todo.data.room.TodoDao
+import ru.mirea.ivashechkinav.todo.data.sharedprefs.RevisionRepository
+import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
+import javax.inject.Inject
 
-class TodoItemsRepositoryImpl: TodoItemsRepository {
-    private val todoItems: MutableList<TodoItem> = generateItems()
+class TodoItemsRepositoryImpl @Inject constructor(
+    private val todoDao: TodoDao,
+    private val todoApi: TodoApi,
+    private val revisionRepository: RevisionRepository
+) : TodoItemsRepository {
 
-    private val todoItemsFlow: MutableStateFlow<List<TodoItem>> = MutableStateFlow(todoItems.toList())
-
-    override suspend fun addItem(item: TodoItem) = withContext(Dispatchers.IO) {
-        val result = todoItems.add(item)
-        todoItemsFlow.value = todoItems.toList()
-        return@withContext result
+    companion object {
+        const val MAX_ATTEMPTS = 3
     }
 
-    override suspend fun deleteItemById(id: String) = withContext(Dispatchers.IO) {
-        val result = todoItems.removeIf { it.id == id }
-        todoItemsFlow.value = todoItems.toList()
-        return@withContext result
+    suspend fun <T> retryWithAttempts(
+        attempts: Int,
+        errorMessage: String,
+        block: suspend () -> ResultData<T>
+    ): ResultData<T> {
+        var remainingAttempts = attempts
+        var error: Exception? = null
+        while (remainingAttempts > 0) {
+            try {
+                return block()
+            } catch (e: Exception) {
+                println("Ошибка: ${e.message}. Повторная попытка...")
+                error = e
+                remainingAttempts--
+            }
+        }
+        return if (error != null)
+            ResultData.failure(getErrorMessage(error))
+        else
+            ResultData.failure(errorMessage)
+    }
+    private fun getErrorMessage(e: Exception): String {
+        if (e is HttpException) {
+            return when (e.code()) {
+                400 -> {
+                   "Ошибка на сервере с ревизией. Сообщите в поддержку"
+                }
+                401 -> {
+                    "Ошибка на сервере с авторизацией. Сообщите в поддержку"
+                }
+                404 -> {
+                    "Элемента нет на сервере. Сообщите в поддержку"
+                }
+                500 -> {
+                   "Неизвестная ошибка сервера"
+                }
+                else -> {
+                 "Неизвестная Http ошибка"
+                }
+            }
+        } else {
+            return "Нету соединения с интернетом"
+        }
+    }
+    override suspend fun addItem(item: TodoItem): ResultData<Nothing> = withContext(Dispatchers.IO) {
+        todoDao.save(item = item)
+
+
+        val request = NWRequest(
+            element = item.toNetworkItem()
+        )
+        return@withContext retryWithAttempts(attempts = MAX_ATTEMPTS, errorMessage = "Ошибка при добавлении дела") {
+            val lastRevision = revisionRepository.getLastRevision()
+            val response = todoApi.add(revision = lastRevision, itemRequest = request)
+            revisionRepository.setRevision(response.revision!!)
+            return@retryWithAttempts ResultData.success<Nothing>()
+        }.also { if(it is ResultData.Failure) revisionRepository.editLocalChanges(true) }
+    }
+
+    override suspend fun deleteItemById(id: String): ResultData<Nothing> = withContext(Dispatchers.IO) {
+        todoDao.deleteById(itemId = id)
+        return@withContext retryWithAttempts(attempts = MAX_ATTEMPTS, errorMessage = "Ошибка при удалении дела") {
+            val lastRevision = revisionRepository.getLastRevision()
+            val response = todoApi.delete(revision = lastRevision, id = id)
+            revisionRepository.setRevision(response.revision!!)
+            return@retryWithAttempts ResultData.success<Nothing>()
+        }.also { if(it is ResultData.Failure) revisionRepository.editLocalChanges(true) }
     }
 
     override fun getTodoItemsFlow(): Flow<List<TodoItem>> {
-        return todoItemsFlow.asStateFlow()
+        return todoDao.getAllFlow()
     }
 
-    override suspend fun updateItem(item: TodoItem) = withContext(Dispatchers.IO) {
-        val itemToUpdate = todoItems.find {it.id == item.id}
+    override suspend fun updateItem(item: TodoItem): ResultData<Nothing> = withContext(Dispatchers.IO)  {
+        val itemToUpdate = todoDao.getById(itemId = item.id)
 
         itemToUpdate?.let {
             val updatedItem = it.copy(
@@ -43,17 +106,75 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = item.isComplete,
                 changeTimestamp = System.currentTimeMillis()
             )
-            val indexToUpdate = todoItems.indexOf(itemToUpdate)
-            todoItems[indexToUpdate] = updatedItem
-            todoItemsFlow.value = todoItems.toList()
-            return@withContext true
+            todoDao.update(item = updatedItem)
+            return@withContext retryWithAttempts(MAX_ATTEMPTS, "Ошибка при изменении дела") {
+                val lastRevision = revisionRepository.getLastRevision()
+                val nwRequest = NWRequest(
+                    element = item.toNetworkItem()
+                )
+                val response =
+                    todoApi.update(revision = lastRevision, id = item.id, itemRequest = nwRequest)
+                revisionRepository.setRevision(response.revision!!)
+                return@retryWithAttempts ResultData.success<Nothing>()
+            }.also { if(it is ResultData.Failure) revisionRepository.editLocalChanges(true) }
         }
-        return@withContext false
+        return@withContext ResultData.failure("Ошибка при изменении дела")
     }
 
-    override fun getAllItems() = todoItems.toList()
+    override suspend fun getTodoItemsFlowWith(isChecked: Boolean) = withContext(Dispatchers.IO) {
+        if (isChecked) {
+            return@withContext todoDao.getAllFlowWithCheckedState(isChecked = false)
+        }
+        return@withContext todoDao.getAllFlow()
+    }
 
-    override fun getItemById(id: String) = todoItems.firstOrNull { it.id == id }
+    override suspend fun getCountOfCompletedItems(): Int = withContext(Dispatchers.IO) {
+        return@withContext todoDao.getCompletedCount()
+    }
+
+    override suspend fun getItemById(id: String): ResultData<TodoItem> = withContext(Dispatchers.IO) {
+
+        retryWithAttempts(MAX_ATTEMPTS, "Ошибка при получении дела") {
+            val response = todoApi.getByID(id = id)
+            response.revision?.let {
+                revisionRepository.setRevision(it)
+            }
+            return@retryWithAttempts ResultData.success(todoDao.getById(itemId = id))
+        }
+
+    }
+
+    override suspend fun pullItemsFromServer(): ResultData<Nothing> = withContext(Dispatchers.IO) {
+        retryWithAttempts(MAX_ATTEMPTS, "Ошибка при обновлении данных") {
+            val response = todoApi.getAll()
+            response.revision?.let {
+                revisionRepository.setRevision(it)
+            }
+            todoDao.deleteAll()
+            val newList = response.list?.map {
+                it.toTodoItem() ?: throw IllegalArgumentException("Item from server can not be null")
+            } ?: throw IllegalArgumentException("List from server can not be null ")
+
+            todoDao.save(newList)
+            revisionRepository.editLocalChanges(false)
+            return@retryWithAttempts ResultData.success<Nothing>()
+        }.also { if(it is ResultData.Success) revisionRepository.editLocalChanges(false) }
+    }
+    override suspend fun patchItemsToServer(): ResultData<Nothing> = withContext(Dispatchers.IO) {
+        retryWithAttempts(MAX_ATTEMPTS, "Ошибка при загрузке локальных изменения на сервер") {
+            //PATCH перезаписывает все, что было в репе(условие такое)
+            if (!revisionRepository.hasLocalChanges())
+                return@retryWithAttempts ResultData.failure("Нету локальных изменений")
+            val revision = todoApi.getAll().revision!!
+            val roomItems = todoDao.getAll().map { it.toNetworkItem() }
+            val nwRequestList = NWRequestList(
+                list = roomItems
+            )
+            val response = todoApi.patch(revision, nwRequestList)
+            revisionRepository.setRevision(response.revision!!)
+            return@retryWithAttempts ResultData.success()
+        }
+    }
 
     private fun generateItems(): MutableList<TodoItem> {
         return mutableListOf(
@@ -65,8 +186,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "2",
                 text = "Buy groceries:\nMilk\nBread\nEggs\nBeacon",
                 importance = Importance.COMMON,
@@ -74,8 +194,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = true,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "3",
                 text = "Read a book",
                 importance = Importance.LOW,
@@ -83,8 +202,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = true,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "4",
                 text = "Call mom",
                 importance = Importance.HIGH,
@@ -92,8 +210,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "5",
                 text = "Fix leaking faucet",
                 importance = Importance.COMMON,
@@ -101,8 +218,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "6",
                 text = "Attend a meeting",
                 importance = Importance.HIGH,
@@ -110,8 +226,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "7",
                 text = "Pay bills",
                 importance = Importance.COMMON,
@@ -119,8 +234,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "8",
                 text = "Write a blog post",
                 importance = Importance.LOW,
@@ -128,8 +242,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "9",
                 text = "Plan vacation",
                 importance = Importance.HIGH,
@@ -137,8 +250,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "10",
                 text = "Clean the garage",
                 importance = Importance.COMMON,
@@ -146,8 +258,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "11",
                 text = "Finish the report for the quarterly meeting",
                 importance = Importance.HIGH,
@@ -155,8 +266,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "12",
                 text = "Prepare a presentation for the project pitch",
                 importance = Importance.COMMON,
@@ -164,8 +274,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "13",
                 text = "Research and gather data for market analysis",
                 importance = Importance.LOW,
@@ -173,8 +282,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "14",
                 text = "Organize team building activities for the department",
                 importance = Importance.HIGH,
@@ -182,8 +290,7 @@ class TodoItemsRepositoryImpl: TodoItemsRepository {
                 isComplete = false,
                 creationTimestamp = System.currentTimeMillis(),
                 changeTimestamp = System.currentTimeMillis()
-            ),
-            TodoItem(
+            ), TodoItem(
                 id = "15",
                 text = "Implement new feature based on user feedback and requirements",
                 importance = Importance.COMMON,

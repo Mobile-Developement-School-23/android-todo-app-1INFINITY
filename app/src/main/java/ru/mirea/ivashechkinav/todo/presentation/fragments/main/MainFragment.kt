@@ -5,102 +5,141 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.databinding.FragmentMainBinding
-import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
+import ru.mirea.ivashechkinav.todo.presentation.MainActivity
 import ru.mirea.ivashechkinav.todo.presentation.adapters.SwipeTodoItemCallback
 import ru.mirea.ivashechkinav.todo.presentation.adapters.TodoAdapter
+import javax.inject.Inject
 
 class MainFragment : Fragment() {
 
+    @Inject
+    lateinit var viewModelFactory: ViewModelProvider.Factory
+    private val vm: MainViewModel by viewModels { viewModelFactory }
+
     private lateinit var binding: FragmentMainBinding
     private lateinit var todoRecyclerView: RecyclerView
-    private lateinit var repository: TodoItemsRepository
     private lateinit var todoAdapter: TodoAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         binding = FragmentMainBinding.inflate(inflater, container, false)
-        repository = (requireActivity().application as App).repository
-        recyclerViewInit()
+        (requireActivity() as MainActivity)
+            .activityComponent
+            .mainFragmentComponentFactory()
+            .create()
+            .inject(this)
+
+        initVisibleButton()
+        initRecyclerView()
+        initRecyclerViewSwipes()
         floatingButtonInit()
-        initTodoListObserve()
+        initViewModelObservers()
         return binding.root
     }
 
-    private fun initTodoListObserve() {
+    private fun initViewModelObservers() {
         lifecycleScope.launch {
-            repository.getTodoItemsFlow().collect { list ->
-                todoAdapter.submitList(list)
-                val count = list.count { it.isComplete }.toString()
-                binding.tvCountDone.text = "Выполнено - $count"
+            vm.uiState.collectLatest { state ->
+                binding.tvCountDone.text = state.countOfCompletedText
+                todoAdapter.submitList(state.todoItems)
+            }
+        }
+        lifecycleScope.launch {
+            vm.effect.collect {
+                when (it) {
+                    is MainViewModel.EffectUi.ShowSnackbar -> {
+                        Snackbar.make(binding.root, it.message, Snackbar.LENGTH_SHORT).show()
+                    }
+                    is MainViewModel.EffectUi.ToTaskFragmentUpdate -> {
+                        val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate(
+                            taskId = it.todoItemId
+                        )
+                        findNavController().navigate(action)
+                    }
+                    is MainViewModel.EffectUi.ToTaskFragmentCreate -> {
+                        val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate()
+                        findNavController().navigate(action)
+                    }
+                    is MainViewModel.EffectUi.ShowSnackbarWithPullRetry -> {
+                        val mySnackbar = Snackbar.make(binding.root, "Произошла ошибка при загрузке списка из интернета", Snackbar.LENGTH_LONG)
+                        mySnackbar.setAction("Повторить") {
+                            vm.setEvent(MainViewModel.EventUi.OnSnackBarPullRetryButtonClicked)
+                        }
+                        mySnackbar.show()
+                    }
+                }
             }
         }
     }
 
-    private fun recyclerViewInit() {
+    private fun initVisibleButton() {
+        binding.cbVisible.setOnCheckedChangeListener { _, isChecked ->
+            vm.setEvent(
+                MainViewModel.EventUi.OnVisibleChange(isFilterCompleted = isChecked)
+            )
+        }
+    }
+
+    private fun initRecyclerView() {
         todoRecyclerView = binding.rwTodoList
         todoAdapter = TodoAdapter(
             object : TodoAdapter.Listener {
                 override fun onItemClicked(todoItem: TodoItem) {
-                    val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate(
-                        taskId = todoItem.id
+                    vm.setEvent(
+                        MainViewModel.EventUi.OnItemSelected(todoItem)
                     )
-                    findNavController().navigate(action)
                 }
 
                 override fun onItemChecked(todoItem: TodoItem) {
-                    val itemChecked = todoItem
-                        .copy(isComplete = !todoItem.isComplete)
-                    lifecycleScope.launch {
-                        repository.updateItem(itemChecked)
-                    }
+                    vm.setEvent(
+                        MainViewModel.EventUi.OnItemCheckedChange(todoItem)
+                    )
                 }
             },
-            applicationContext = activity!!.applicationContext
+            applicationContext = requireActivity().applicationContext
         )
         val layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
         todoRecyclerView.adapter = todoAdapter
         todoRecyclerView.layoutManager = layoutManager
-        todoAdapter.submitList(repository.getAllItems())
-        initRecyclerViewSwipes(todoAdapter)
     }
 
     private fun floatingButtonInit() {
-        val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate()
         binding.floatingActionButton.setOnClickListener {
-            findNavController().navigate(action)
+            vm.setEvent(
+                MainViewModel.EventUi.OnFloatingButtonClick
+            )
         }
     }
 
-    private fun initRecyclerViewSwipes(adapter: TodoAdapter) {
+    private fun initRecyclerViewSwipes() {
         val swipeCallback = SwipeTodoItemCallback(
-            onSwipeLeft = { position ->
-                val itemId = adapter.getItemAtPosition(position).id
-                lifecycleScope.launch {
-                    repository.deleteItemById(itemId)
-                }
+            onSwipeLeft = { todoItem ->
+                vm.setEvent(
+                    MainViewModel.EventUi.OnItemSwipeToDelete(todoItem)
+                )
             },
-            onSwipeRight = { position ->
-                val oldItem = adapter
-                    .getItemAtPosition(position)
-                val itemChecked = oldItem
-                    .copy(isComplete = !oldItem.isComplete)
-                lifecycleScope.launch {
-                    repository.updateItem(itemChecked)
-                }
+            onSwipeRight = { todoItem ->
+                vm.setEvent(
+                    MainViewModel.EventUi.OnItemSwipeToCheck(todoItem)
+                )
             },
-            applicationContext = activity!!.baseContext
+            applicationContext = requireActivity().baseContext
         )
 
         val itemTouchHelper = ItemTouchHelper(swipeCallback)
