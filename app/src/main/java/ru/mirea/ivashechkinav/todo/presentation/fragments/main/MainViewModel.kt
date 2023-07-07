@@ -19,6 +19,7 @@ import ru.mirea.ivashechkinav.todo.core.retryWithAttempts
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.*
 import ru.mirea.ivashechkinav.todo.presentation.receiver.NetworkChangeReceiver
 import javax.inject.Inject
 
@@ -27,29 +28,6 @@ class MainViewModel @Inject constructor(
     private val repository: TodoItemsRepository,
     private val networkChangeReceiver: NetworkChangeReceiver
 ) : ViewModel() {
-    sealed class EventUi {
-        data class OnVisibleChange(val isFilterCompleted: Boolean) : EventUi()
-        data class OnItemSelected(val todoItem: TodoItem) : EventUi()
-        data class OnItemCheckedChange(val todoItem: TodoItem) : EventUi()
-        data class OnItemSwipeToDelete(val todoItem: TodoItem) : EventUi()
-        data class OnItemSwipeToCheck(val todoItem: TodoItem) : EventUi()
-        object OnFloatingButtonClick : EventUi()
-        object OnSnackBarPullRetryButtonClicked : EventUi()
-    }
-
-    sealed class EffectUi {
-        data class ShowSnackbar(val message: String) : EffectUi()
-        data class ToTaskFragmentUpdate(val todoItemId: String) : EffectUi()
-        object ToTaskFragmentCreate : EffectUi()
-        object ShowSnackbarWithPullRetry : EffectUi()
-    }
-
-    data class UiState(
-        val countOfCompletedText: String = "Загрузка выполненных задач...",
-        val todoItems: List<TodoItem> = listOf(),
-        val isFilterCompleted: Boolean = false
-    )
-
     private val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
         Log.e("Coroutine", "Error: ", throwable)
         CoroutineScope(context).launch { handleException(throwable) }
@@ -83,83 +61,86 @@ class MainViewModel @Inject constructor(
     init {
         viewModelScope.launch(exceptionHandler) {
             pullItemsFromServer()
-
             networkChangeReceiver.stateFlow.collectLatest { isConnected ->
-                if (!isConnected) {
-                    setEffect { EffectUi.ShowSnackbar("Нет соединения с интернетом") }
-                } else {
-                    setEffect { EffectUi.ShowSnackbar("Cоединение с интернетом появилось") }
-                    val result = retryWithAttempts{ repository.patchItemsToServer() }
-                    if (result is ResultData.Failure)
-                        pullItemsFromServer()
-                }
+                handleConnectChange(
+                    isConnected
+                )
             }
         }
         viewModelScope.launch(exceptionHandler) {
-            itemsFlow.collect { list ->
-                val count = repository.getCountOfCompletedItems()
-                if (uiState.value.isFilterCompleted) {
-                    setState {
-                        copy(
-                            countOfCompletedText = "Скрыто выполненных - $count",
-                            todoItems = list.filter { !it.isComplete }
-                        )
-                    }
-                } else {
-                    setState {
-                        copy(
-                            countOfCompletedText = "Выполнено - $count",
-                            todoItems = list
-                        )
-                    }
-                }
-            }
+            itemsFlow.collect { handleItems(it) }
         }
         viewModelScope.launch(exceptionHandler) {
-            _event.collect { event ->
-                when (event) {
-                    is EventUi.OnVisibleChange -> {
-                        visibleStateFlow.value = event.isFilterCompleted
-                        setState {
-                            copy(
-                                isFilterCompleted = event.isFilterCompleted
-                            )
-                        }
-                    }
+            _event.collect { handleEvent(it) }
+        }
+    }
 
-                    is EventUi.OnItemSelected -> {
-                        val itemId = event.todoItem.id
-                        setEffect { EffectUi.ToTaskFragmentUpdate(itemId) }
-                    }
+    private suspend fun handleConnectChange(isConnected: Boolean) {
+        if (!isConnected) {
+            setEffect { EffectUi.ShowSnackbar("Нет соединения с интернетом") }
+        } else {
+            setEffect { EffectUi.ShowSnackbar("Cоединение с интернетом появилось") }
+            val result = retryWithAttempts { repository.patchItemsToServer() }
+            if (result is ResultData.Failure)
+                pullItemsFromServer()
+        }
+    }
 
-                    is EventUi.OnItemSwipeToCheck -> {
-                        val itemChecked = event.todoItem
-                            .copy(isComplete = !event.todoItem.isComplete)
-                        retryWithAttempts { repository.updateItem(itemChecked) }
-                    }
-
-                    is EventUi.OnItemCheckedChange -> {
-                        val itemChecked = event.todoItem
-                            .copy(isComplete = !event.todoItem.isComplete)
-                        retryWithAttempts { repository.updateItem(itemChecked) }
-                    }
-
-                    is EventUi.OnItemSwipeToDelete -> {
-                        retryWithAttempts { repository.deleteItemById(event.todoItem.id) }
-                    }
-
-                    is EventUi.OnFloatingButtonClick -> {
-                        setEffect { EffectUi.ToTaskFragmentCreate }
-                    }
-
-                    is EventUi.OnSnackBarPullRetryButtonClicked -> pullItemsFromServer()
-                }
+    private suspend fun handleItems(list: List<TodoItem>) {
+        val count = repository.getCountOfCompletedItems()
+        if (uiState.value.isFilterCompleted) {
+            setState {
+                copy(
+                    countOfCompletedText = "Скрыто выполненных - $count",
+                    todoItems = list.filter { !it.isComplete }
+                )
+            }
+        } else {
+            setState {
+                copy(
+                    countOfCompletedText = "Выполнено - $count",
+                    todoItems = list
+                )
             }
         }
     }
 
+    private suspend fun handleEvent(event: EventUi) {
+        when (event) {
+            is EventUi.OnVisibleChange -> {
+                visibleStateFlow.value = event.isFilterCompleted
+                setState { copy(isFilterCompleted = event.isFilterCompleted) }
+            }
+
+            is EventUi.OnItemSelected -> {
+                val itemId = event.todoItem.id
+                setEffect { EffectUi.ToTaskFragmentUpdate(itemId) }
+            }
+
+            is EventUi.OnItemSwipeToCheck -> {
+                val itemChecked = event.todoItem.copy(isComplete = !event.todoItem.isComplete)
+                retryWithAttempts { repository.updateItem(itemChecked) }
+            }
+
+            is EventUi.OnItemCheckedChange -> {
+                val itemChecked = event.todoItem.copy(isComplete = !event.todoItem.isComplete)
+                retryWithAttempts { repository.updateItem(itemChecked) }
+            }
+
+            is EventUi.OnItemSwipeToDelete -> {
+                retryWithAttempts { repository.deleteItemById(event.todoItem.id) }
+            }
+
+            is EventUi.OnFloatingButtonClick -> {
+                setEffect { EffectUi.ToTaskFragmentCreate }
+            }
+
+            is EventUi.OnSnackBarPullRetryButtonClicked -> pullItemsFromServer()
+        }
+    }
+
     private suspend fun pullItemsFromServer() {
-        val result = retryWithAttempts{ repository.pullItemsFromServer() }
+        val result = retryWithAttempts { repository.pullItemsFromServer() }
         if (result is ResultData.Failure) {
             setEffect { EffectUi.ShowSnackbarWithPullRetry }
         }

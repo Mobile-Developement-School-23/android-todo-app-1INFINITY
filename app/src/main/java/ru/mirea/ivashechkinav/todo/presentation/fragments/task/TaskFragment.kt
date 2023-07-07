@@ -29,6 +29,7 @@ import ru.mirea.ivashechkinav.todo.databinding.FragmentTaskBinding
 import ru.mirea.ivashechkinav.todo.presentation.MainActivity
 import ru.mirea.ivashechkinav.todo.core.textChanges
 import java.text.SimpleDateFormat
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.*
 import java.util.*
 import javax.inject.Inject
 
@@ -69,18 +70,19 @@ class TaskFragment : Fragment() {
                 changeImportanceValue(state.importance)
                 changeDeleteBlockColor(state)
 
-                if (state.viewState == TaskViewModel.FragmentViewState.Loading)
+                if (state.viewState == FragmentViewState.Loading)
                     binding.edTodoItemText.setText(state.text)
             }
         }
         lifecycleScope.launch {
             vm.effect.collect { effect ->
                 when (effect) {
-                    is TaskViewModel.EffectUi.ShowSnackbar -> {
+                    is EffectUi.ShowSnackbar -> {
                         Snackbar.make(binding.root, effect.message, Snackbar.LENGTH_SHORT).show()
                     }
-                    is TaskViewModel.EffectUi.ToBackFragment -> findNavController().popBackStack()
-                    is TaskViewModel.EffectUi.ShowDatePicker -> showDatePicker()
+
+                    is EffectUi.ToBackFragment -> findNavController().popBackStack()
+                    is EffectUi.ShowDatePicker -> showDatePicker()
                 }
             }
         }
@@ -89,7 +91,7 @@ class TaskFragment : Fragment() {
     private fun loadArgs() {
         args.taskId?.let {
             vm.setEvent(
-                TaskViewModel.EventUi.OnTodoItemIdLoaded(it)
+                EventUi.OnTodoItemIdLoaded(it)
             )
         }
     }
@@ -97,12 +99,12 @@ class TaskFragment : Fragment() {
     private fun initEditTextObserve() {
         lifecycleScope.launch {
             binding.edTodoItemText.textChanges().debounce(300).collectLatest {
-                vm.setEvent(TaskViewModel.EventUi.OnTodoTextEdited(it.toString()))
+                vm.setEvent(EventUi.OnTodoTextEdited(it.toString()))
             }
         }
     }
 
-    private fun changeDeleteBlockColor(state: TaskViewModel.UiState) {
+    private fun changeDeleteBlockColor(state: UiState) {
         if (state.creationTimestamp != null || !state.text.isNullOrEmpty()) {
             val redColor =
                 AppCompatResources.getColorStateList(requireContext(), R.color.color_light_red)
@@ -118,12 +120,12 @@ class TaskFragment : Fragment() {
 
     private fun initButtons() {
         binding.btnSave.setOnClickListener {
-            vm.setEvent(TaskViewModel.EventUi.OnSaveButtonClicked)
+            vm.setEvent(EventUi.OnSaveButtonClicked)
         }
         binding.imDelete.setOnClickListener {
-            vm.setEvent(TaskViewModel.EventUi.OnDeleteButtonClicked)
+            vm.setEvent(EventUi.OnDeleteButtonClicked)
         }
-        binding.imCancel.setOnClickListener { vm.setEvent(TaskViewModel.EventUi.OnBackButtonClicked) }
+        binding.imCancel.setOnClickListener { vm.setEvent(EventUi.OnBackButtonClicked) }
     }
 
     private fun initPopUpMenu() {
@@ -131,53 +133,44 @@ class TaskFragment : Fragment() {
         val currentPopupMenu = popupMenu ?: return
         currentPopupMenu.inflate(R.menu.popup_menu)
         val highElement: MenuItem = currentPopupMenu.menu.getItem(2)
-        val s = SpannableString(highElement.title)
-        s.setSpan(
-            ForegroundColorSpan(
-                ContextCompat.getColor(
-                    requireContext(),
-                    R.color.color_light_red
-                )
-            ), 0, s.length, 0
-        )
-        highElement.title = s
-
-        binding.flImportanceMenu.setOnClickListener { currentPopupMenu.show() }
-
-        currentPopupMenu.setOnMenuItemClickListener { menuItem ->
-            val newImportance = when (menuItem.itemId) {
-                R.id.menu_item_none -> {
-                    Importance.LOW
-                }
-                R.id.menu_item_low -> {
-                    Importance.COMMON
-                }
-                R.id.menu_item_high -> {
-                    Importance.HIGH
-                }
-                else -> Importance.LOW
-            }
-            vm.setEvent(
-                TaskViewModel.EventUi.OnImportanceSelected(newImportance)
+        highElement.title = SpannableString(highElement.title).apply {
+            setSpan(
+                ForegroundColorSpan(
+                    ContextCompat.getColor(
+                        requireContext(),
+                        R.color.color_light_red
+                    )
+                ), 0, this.length, 0
             )
-            true
         }
+        binding.flImportanceMenu.setOnClickListener { currentPopupMenu.show() }
+        currentPopupMenu.setOnMenuItemClickListener(this::onMenuItemClick)
     }
-
+    private fun onMenuItemClick(menuItem: MenuItem): Boolean {
+        val newImportance = when (menuItem.itemId) {
+            R.id.menu_item_none -> Importance.LOW
+            R.id.menu_item_low -> Importance.COMMON
+            R.id.menu_item_high -> Importance.HIGH
+            else -> Importance.LOW
+        }
+        vm.setEvent(
+            EventUi.OnImportanceSelected(newImportance)
+        )
+        return true
+    }
     private fun changeImportanceValue(importance: Importance) {
         val currentPopupMenu = popupMenu ?: return
         when (importance) {
             Importance.LOW -> {
                 binding.tvImportanceValue.text = currentPopupMenu.menu.getItem(0).title
             }
+
             Importance.COMMON -> {
                 binding.tvImportanceValue.text = currentPopupMenu.menu.getItem(1).title
             }
+
             Importance.HIGH -> {
                 binding.tvImportanceValue.text = currentPopupMenu.menu.getItem(2).title
-            }
-            else -> {
-                throw UnsupportedOperationException("Unknown Importance value: $importance")
             }
         }
     }
@@ -189,7 +182,7 @@ class TaskFragment : Fragment() {
 
         binding.swDeadline.setOnClickListener {
             vm.setEvent(
-                TaskViewModel.EventUi.OnDeadlineSwitchChanged(
+                EventUi.OnDeadlineSwitchChanged(
                     binding.swDeadline.isChecked
                 )
             )
@@ -201,15 +194,13 @@ class TaskFragment : Fragment() {
         val year = c.get(Calendar.YEAR)
         val month = c.get(Calendar.MONTH)
         val day = c.get(Calendar.DAY_OF_MONTH)
-
-
         val dpd = DatePickerDialog(requireActivity(), { view, year, monthOfYear, dayOfMonth ->
             c.set(Calendar.YEAR, year)
             c.set(Calendar.MONTH, monthOfYear)
             c.set(Calendar.DAY_OF_MONTH, dayOfMonth)
 
             vm.setEvent(
-                TaskViewModel.EventUi.OnDeadlineSelected(c.timeInMillis)
+                EventUi.OnDeadlineSelected(c.timeInMillis)
             )
         }, year, month, day)
 

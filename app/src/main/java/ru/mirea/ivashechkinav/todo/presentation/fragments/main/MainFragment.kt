@@ -15,12 +15,12 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.databinding.FragmentMainBinding
 import ru.mirea.ivashechkinav.todo.presentation.MainActivity
 import ru.mirea.ivashechkinav.todo.presentation.adapters.SwipeTodoItemCallback
 import ru.mirea.ivashechkinav.todo.presentation.adapters.TodoAdapter
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.*
 import javax.inject.Inject
 
 class MainFragment : Fragment() {
@@ -61,36 +61,36 @@ class MainFragment : Fragment() {
         }
         lifecycleScope.launch {
             vm.effect.collect {
-                when (it) {
-                    is MainViewModel.EffectUi.ShowSnackbar -> {
-                        Snackbar.make(binding.root, it.message, Snackbar.LENGTH_SHORT).show()
-                    }
-                    is MainViewModel.EffectUi.ToTaskFragmentUpdate -> {
-                        val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate(
-                            taskId = it.todoItemId
-                        )
-                        findNavController().navigate(action)
-                    }
-                    is MainViewModel.EffectUi.ToTaskFragmentCreate -> {
-                        val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate()
-                        findNavController().navigate(action)
-                    }
-                    is MainViewModel.EffectUi.ShowSnackbarWithPullRetry -> {
-                        val mySnackbar = Snackbar.make(binding.root, "Произошла ошибка при загрузке списка из интернета", Snackbar.LENGTH_LONG)
-                        mySnackbar.setAction("Повторить") {
-                            vm.setEvent(MainViewModel.EventUi.OnSnackBarPullRetryButtonClicked)
-                        }
-                        mySnackbar.show()
-                    }
-                }
+                handleEffect(it)
             }
         }
     }
-
+    private fun handleEffect(effect: EffectUi) {
+        when (effect) {
+            is EffectUi.ShowSnackbar -> Snackbar.make(binding.root, effect.message, Snackbar.LENGTH_SHORT).show()
+            is EffectUi.ToTaskFragmentUpdate -> {
+                val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate(taskId = effect.todoItemId)
+                findNavController().navigate(action)
+            }
+            is EffectUi.ToTaskFragmentCreate -> {
+                val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate()
+                findNavController().navigate(action)
+            }
+            is EffectUi.ShowSnackbarWithPullRetry -> {
+                Snackbar.make(
+                    binding.root,
+                    "Произошла ошибка при загрузке списка из интернета",
+                    Snackbar.LENGTH_LONG
+                ).setAction("Повторить") {
+                    vm.setEvent(EventUi.OnSnackBarPullRetryButtonClicked)
+                }.show()
+            }
+        }
+    }
     private fun initVisibleButton() {
         binding.cbVisible.setOnCheckedChangeListener { _, isChecked ->
             vm.setEvent(
-                MainViewModel.EventUi.OnVisibleChange(isFilterCompleted = isChecked)
+                EventUi.OnVisibleChange(isFilterCompleted = isChecked)
             )
         }
     }
@@ -100,15 +100,10 @@ class MainFragment : Fragment() {
         todoAdapter = TodoAdapter(
             object : TodoAdapter.Listener {
                 override fun onItemClicked(todoItem: TodoItem) {
-                    vm.setEvent(
-                        MainViewModel.EventUi.OnItemSelected(todoItem)
-                    )
+                    vm.setEvent(EventUi.OnItemSelected(todoItem))
                 }
-
                 override fun onItemChecked(todoItem: TodoItem) {
-                    vm.setEvent(
-                        MainViewModel.EventUi.OnItemCheckedChange(todoItem)
-                    )
+                    vm.setEvent(EventUi.OnItemCheckedChange(todoItem))
                 }
             },
             applicationContext = requireActivity().applicationContext
@@ -122,7 +117,7 @@ class MainFragment : Fragment() {
     private fun floatingButtonInit() {
         binding.floatingActionButton.setOnClickListener {
             vm.setEvent(
-                MainViewModel.EventUi.OnFloatingButtonClick
+                EventUi.OnFloatingButtonClick
             )
         }
     }
@@ -131,17 +126,16 @@ class MainFragment : Fragment() {
         val swipeCallback = SwipeTodoItemCallback(
             onSwipeLeft = { todoItem ->
                 vm.setEvent(
-                    MainViewModel.EventUi.OnItemSwipeToDelete(todoItem)
+                    EventUi.OnItemSwipeToDelete(todoItem)
                 )
             },
             onSwipeRight = { todoItem ->
                 vm.setEvent(
-                    MainViewModel.EventUi.OnItemSwipeToCheck(todoItem)
+                    EventUi.OnItemSwipeToCheck(todoItem)
                 )
             },
             applicationContext = requireActivity().baseContext
         )
-
         val itemTouchHelper = ItemTouchHelper(swipeCallback)
         itemTouchHelper.attachToRecyclerView(binding.rwTodoList)
     }

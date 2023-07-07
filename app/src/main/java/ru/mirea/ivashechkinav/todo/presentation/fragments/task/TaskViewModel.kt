@@ -2,65 +2,33 @@ package ru.mirea.ivashechkinav.todo.presentation.fragments.task
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
-import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
 import ru.mirea.ivashechkinav.todo.core.DuplicateItemException
 import ru.mirea.ivashechkinav.todo.core.NetworkException
 import ru.mirea.ivashechkinav.todo.core.ServerSideException
 import ru.mirea.ivashechkinav.todo.core.TodoItemNotFoundException
 import ru.mirea.ivashechkinav.todo.core.retryWithAttempts
-import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
-import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainViewModel
-import java.util.*
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.EffectUi
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.EventUi
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.FragmentViewState
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.UiState
+import java.util.UUID
 import javax.inject.Inject
 
 class TaskViewModel @Inject constructor(private val repository: TodoItemsRepository) : ViewModel() {
-    sealed class EventUi {
-        object OnCancelButtonClicked : EventUi()
-        object OnSaveButtonClicked : EventUi()
-        object OnDeleteButtonClicked : EventUi()
-        object OnBackButtonClicked : EventUi()
-        data class OnTodoTextEdited(val editedText: String) : EventUi()
-        data class OnImportanceSelected(val importance: Importance) : EventUi()
-        data class OnDeadlineSelected(val timestamp: Long) : EventUi()
-        data class OnDeadlineSwitchChanged(val isChecked: Boolean) : EventUi()
-        data class OnTodoItemIdLoaded(val todoItemId: String) : EventUi()
-    }
-
-    sealed class FragmentViewState {
-        object Loading : FragmentViewState()
-        object Update : FragmentViewState()
-    }
-
-    sealed class EffectUi {
-        data class ShowSnackbar(val message: String) : EffectUi()
-        object ToBackFragment : EffectUi()
-        object ShowDatePicker : EffectUi()
-    }
-
-    data class UiState(
-        var id: String? = null,
-        var text: String? = null,
-        var importance: Importance = Importance.LOW,
-        var deadlineTimestamp: Long? = null,
-        var isComplete: Boolean = false,
-        var creationTimestamp: Long? = null,
-        val viewState: FragmentViewState = FragmentViewState.Loading
-    )
     private val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
         Log.e("Coroutine", "Error: ", throwable)
         CoroutineScope(context).launch { handleException(throwable) }
@@ -87,88 +55,102 @@ class TaskViewModel @Inject constructor(private val repository: TodoItemsReposit
 
     init {
         viewModelScope.launch(exceptionHandler) {
-            _event.collect { event ->
-                when (event) {
-                    is EventUi.OnBackButtonClicked -> setEffect { EffectUi.ToBackFragment }
-                    is EventUi.OnCancelButtonClicked -> setEffect { EffectUi.ToBackFragment }
-                    is EventUi.OnSaveButtonClicked -> {
+            _event.collect { handleEvent(it) }
+        }
+    }
 
-                        val newItem = validateSaveTask() ?: return@collect
+    private suspend fun handleEvent(event: EventUi) {
+        when (event) {
+            is EventUi.OnBackButtonClicked -> setEffect { EffectUi.ToBackFragment }
+            is EventUi.OnCancelButtonClicked -> setEffect { EffectUi.ToBackFragment }
+            is EventUi.OnSaveButtonClicked -> onSaveButtonClicked()
+            is EventUi.OnDeleteButtonClicked -> onDeleteButtonClicked()
+            is EventUi.OnTodoTextEdited -> onTodoTextEdited(event)
+            is EventUi.OnImportanceSelected -> onImportanceSelected(event)
+            is EventUi.OnDeadlineSelected -> onDeadlineSelected(event)
+            is EventUi.OnDeadlineSwitchChanged -> onDeadlineSwitchChanged(event)
+            is EventUi.OnTodoItemIdLoaded -> onTodoItemIdLoaded(event)
+        }
+    }
 
-                        if (uiState.value.id == null) {
-                            retryWithAttempts{ repository.addItem(newItem) }
-                        } else {
-                            retryWithAttempts{ repository.updateItem(newItem) }
-                        }
-                        setEffect { EffectUi.ToBackFragment }
-                    }
-                    is EventUi.OnDeleteButtonClicked -> {
-                        val currentTodoItem = uiState.value
-                        currentTodoItem.id?.let {
-                            retryWithAttempts{ repository.deleteItemById(it) }
-                        }
-                        setEffect { EffectUi.ToBackFragment }
-                    }
-                    is EventUi.OnTodoTextEdited -> {
-                        setState {
-                            copy(
-                                text = event.editedText,
-                                viewState = FragmentViewState.Update
-                            )
-                        }
-                    }
-                    is EventUi.OnImportanceSelected -> {
-                        setState {
-                            copy(importance = event.importance)
-                        }
-                    }
-                    is EventUi.OnDeadlineSelected -> {
-                        setState {
-                            copy(deadlineTimestamp = event.timestamp)
-                        }
-                    }
-                    is EventUi.OnDeadlineSwitchChanged -> {
-                        if (event.isChecked) {
-                            setEffect { EffectUi.ShowDatePicker }
-                            return@collect
-                        }
-                        setState {
-                            copy(deadlineTimestamp = null)
-                        }
-                    }
-                    is EventUi.OnTodoItemIdLoaded -> {
-                        val result = retryWithAttempts { repository.getItemById(event.todoItemId) }
-                        if (result is ResultData.Success){
-                            val todoItem = result.value ?: return@collect
-                            setState {
-                                copy(
-                                    id = todoItem.id,
-                                    text = todoItem.text,
-                                    importance = todoItem.importance,
-                                    deadlineTimestamp = todoItem.deadlineTimestamp,
-                                    isComplete = todoItem.isComplete,
-                                    creationTimestamp = todoItem.creationTimestamp
-                                )
-                            }
-                        }
-                    }
-                }
+    private suspend fun onSaveButtonClicked() {
+        val newItem = validateSaveTask() ?: return
+
+        if (uiState.value.id == null) {
+            retryWithAttempts { repository.addItem(newItem) }
+        } else {
+            retryWithAttempts { repository.updateItem(newItem) }
+        }
+        setEffect { EffectUi.ToBackFragment }
+    }
+
+    private suspend fun onDeleteButtonClicked() {
+        val currentTodoItem = uiState.value
+        currentTodoItem.id?.let {
+            retryWithAttempts { repository.deleteItemById(it) }
+        }
+        setEffect { EffectUi.ToBackFragment }
+    }
+
+    private fun onTodoTextEdited(event: EventUi.OnTodoTextEdited) {
+        setState {
+            copy(
+                text = event.editedText,
+                viewState = FragmentViewState.Update
+            )
+        }
+    }
+
+    private fun onImportanceSelected(event: EventUi.OnImportanceSelected) {
+        setState {
+            copy(importance = event.importance)
+        }
+    }
+
+    private fun onDeadlineSelected(event: EventUi.OnDeadlineSelected) {
+        setState {
+            copy(deadlineTimestamp = event.timestamp)
+        }
+    }
+
+    private fun onDeadlineSwitchChanged(event: EventUi.OnDeadlineSwitchChanged) {
+        if (event.isChecked) {
+            setEffect { EffectUi.ShowDatePicker }
+            return
+        }
+        setState {
+            copy(deadlineTimestamp = null)
+        }
+    }
+
+    private suspend fun onTodoItemIdLoaded(event: EventUi.OnTodoItemIdLoaded) {
+        val result = retryWithAttempts { repository.getItemById(event.todoItemId) }
+        if (result is ResultData.Success) {
+            val todoItem = result.value ?: return
+            setState {
+                copy(
+                    id = todoItem.id,
+                    text = todoItem.text,
+                    importance = todoItem.importance,
+                    deadlineTimestamp = todoItem.deadlineTimestamp,
+                    isComplete = todoItem.isComplete,
+                    creationTimestamp = todoItem.creationTimestamp
+                )
             }
         }
     }
 
     private fun handleException(e: Throwable) {
-        val errorText =
-            when (e) {
-                is HttpException, is NetworkException -> "Отсутствует подключение"
+        val errorText = when (e) {
+            is HttpException, is NetworkException -> "Отсутствует подключение"
+            is ServerSideException,
+            is BadRequestException,
+            is TodoItemNotFoundException,
+            is DuplicateItemException
+            -> "Ошибка на сервере"
 
-                is ServerSideException,
-                is BadRequestException,
-                is TodoItemNotFoundException,
-                is DuplicateItemException
-                -> "Ошибка на сервере"
-                else -> "Неизвестная ошибка"
-            }
+            else -> "Неизвестная ошибка"
+        }
         setEffect { EffectUi.ShowSnackbar(message = errorText) }
     }
 
