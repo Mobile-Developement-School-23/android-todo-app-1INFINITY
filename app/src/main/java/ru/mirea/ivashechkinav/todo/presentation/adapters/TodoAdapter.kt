@@ -21,10 +21,6 @@ class TodoAdapter(
 
     fun currentList(): List<TodoItem> = differ.currentList
 
-    fun getItemAtPosition(position: Int): TodoItem {
-        return currentList()[position]
-    }
-
     interface Listener {
         fun onItemClicked(todoItem: TodoItem)
         fun onItemChecked(todoItem: TodoItem)

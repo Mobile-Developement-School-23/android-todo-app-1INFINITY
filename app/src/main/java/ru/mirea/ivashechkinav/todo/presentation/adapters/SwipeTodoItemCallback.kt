@@ -1,12 +1,14 @@
 package ru.mirea.ivashechkinav.todo.presentation.adapters
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffColorFilter
 import android.util.DisplayMetrics
+import android.view.View
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.graphics.drawable.toBitmap
-import androidx.core.view.marginLeft
-import androidx.core.view.marginRight
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import ru.mirea.ivashechkinav.todo.R
@@ -32,8 +34,10 @@ class SwipeTodoItemCallback(
             PorterDuff.Mode.SRC_IN
         )
     }
-    private val acceptIcon = AppCompatResources.getDrawable(applicationContext, R.drawable.ic_check)!!.toBitmap()
-    private val deleteIcon = AppCompatResources.getDrawable(applicationContext, R.drawable.ic_delete)!!.toBitmap()
+    private val acceptIcon =
+        AppCompatResources.getDrawable(applicationContext, R.drawable.ic_check)!!.toBitmap()
+    private val deleteIcon =
+        AppCompatResources.getDrawable(applicationContext, R.drawable.ic_delete)!!.toBitmap()
 
     override fun onMove(
         recyclerView: RecyclerView,
@@ -49,6 +53,7 @@ class SwipeTodoItemCallback(
             ItemTouchHelper.LEFT -> {
                 onSwipeLeft(todoItem)
             }
+
             ItemTouchHelper.RIGHT -> {
                 onSwipeRight(todoItem)
             }
@@ -67,32 +72,43 @@ class SwipeTodoItemCallback(
         if (actionState == ItemTouchHelper.ACTION_STATE_SWIPE) {
             val itemView = viewHolder.itemView
             if (dX > 0) {
-                c.drawRect(
-                    itemView.left.toFloat(), itemView.top.toFloat(), itemView.left.toFloat() + dX + convertDpToPx(8),
-                    itemView.bottom.toFloat(), acceptSwipePaint
-                )
-                c.drawBitmap(
-                    acceptIcon,
-                    itemView.left.toFloat() - convertDpToPx(40) + dX,
-                    itemView.top.toFloat() + (itemView.bottom.toFloat() - itemView.top.toFloat() - acceptIcon.height) / 2,
-                    whitePaint
-                )
+                c.drawLeftRectangleWithIcon(itemView, dX)
             } else {
-                c.drawRect(
-                    itemView.right.toFloat() + dX, itemView.top.toFloat(),
-                    itemView.right.toFloat(), itemView.bottom.toFloat(), deleteSwipePaint
-                )
-                c.drawBitmap(
-                    deleteIcon,
-                    itemView.right.toFloat() + convertDpToPx(40) - deleteIcon.width + dX,
-                    itemView.top.toFloat() + (itemView.bottom.toFloat() - itemView.top.toFloat() - deleteIcon.height) / 2,
-                    whitePaint
-                )
-
+                c.drawRightRectangleWithIcon(itemView, dX)
             }
             super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
         }
     }
+
+    private fun Canvas.drawLeftRectangleWithIcon(itemView: View, dX: Float) {
+        this.drawRect(
+            itemView.left.toFloat(),
+            itemView.top.toFloat(),
+            itemView.left.toFloat() + dX + convertDpToPx(8),
+            itemView.bottom.toFloat(),
+            acceptSwipePaint
+        )
+        this.drawBitmap(
+            acceptIcon,
+            itemView.left.toFloat() - convertDpToPx(40) + dX,
+            itemView.top.toFloat() + (itemView.bottom.toFloat() - itemView.top.toFloat() - acceptIcon.height) / 2,
+            whitePaint
+        )
+    }
+
+    private fun Canvas.drawRightRectangleWithIcon(itemView: View, dX: Float) {
+        this.drawRect(
+            itemView.right.toFloat() + dX, itemView.top.toFloat(),
+            itemView.right.toFloat(), itemView.bottom.toFloat(), deleteSwipePaint
+        )
+        this.drawBitmap(
+            deleteIcon,
+            itemView.right.toFloat() + convertDpToPx(40) - deleteIcon.width + dX,
+            itemView.top.toFloat() + (itemView.bottom.toFloat() - itemView.top.toFloat() - deleteIcon.height) / 2,
+            whitePaint
+        )
+    }
+
     private fun convertDpToPx(dp: Int): Int {
         return (dp * (applicationContext.resources.displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT)).roundToInt()
     }
