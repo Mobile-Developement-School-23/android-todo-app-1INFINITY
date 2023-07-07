@@ -10,5 +10,5 @@ import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 interface DataModule {
     @Binds
     @AppScope
-    fun provideRepository(impl: TodoItemsRepositoryImpl): TodoItemsRepository
+    fun bindRepository(impl: TodoItemsRepositoryImpl): TodoItemsRepository
 }
