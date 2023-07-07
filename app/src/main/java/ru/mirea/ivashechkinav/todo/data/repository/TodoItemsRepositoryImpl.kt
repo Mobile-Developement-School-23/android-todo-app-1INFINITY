@@ -1,11 +1,16 @@
 package ru.mirea.ivashechkinav.todo.data.repository
 
+import android.util.Log
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import retrofit2.HttpException
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.data.retrofit.*
+import ru.mirea.ivashechkinav.todo.data.retrofit.models.NWRequest
+import ru.mirea.ivashechkinav.todo.data.retrofit.models.NWRequestList
+import ru.mirea.ivashechkinav.todo.data.retrofit.models.toNetworkItem
+import ru.mirea.ivashechkinav.todo.data.retrofit.models.toTodoItem
 import ru.mirea.ivashechkinav.todo.data.room.TodoDao
 import ru.mirea.ivashechkinav.todo.data.sharedprefs.RevisionRepository
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
@@ -33,7 +38,7 @@ class TodoItemsRepositoryImpl @Inject constructor(
             try {
                 return block()
             } catch (e: Exception) {
-                println("Ошибка: ${e.message}. Повторная попытка...")
+                Log.e("TodoItemsRepositoryImpl", e.message ?: " ")
                 error = e
                 remainingAttempts--
             }
@@ -63,6 +68,7 @@ class TodoItemsRepositoryImpl @Inject constructor(
                 }
             }
         } else {
+            throw e
             return "Нету соединения с интернетом"
         }
     }
@@ -74,9 +80,7 @@ class TodoItemsRepositoryImpl @Inject constructor(
             element = item.toNetworkItem()
         )
         return@withContext retryWithAttempts(attempts = MAX_ATTEMPTS, errorMessage = "Ошибка при добавлении дела") {
-            val lastRevision = revisionRepository.getLastRevision()
-            val response = todoApi.add(revision = lastRevision, itemRequest = request)
-            revisionRepository.setRevision(response.revision!!)
+            val response = todoApi.add(itemRequest = request)
             return@retryWithAttempts ResultData.success<Nothing>()
         }.also { if(it is ResultData.Failure) revisionRepository.editLocalChanges(true) }
     }
@@ -84,9 +88,7 @@ class TodoItemsRepositoryImpl @Inject constructor(
     override suspend fun deleteItemById(id: String): ResultData<Nothing> = withContext(Dispatchers.IO) {
         todoDao.deleteById(itemId = id)
         return@withContext retryWithAttempts(attempts = MAX_ATTEMPTS, errorMessage = "Ошибка при удалении дела") {
-            val lastRevision = revisionRepository.getLastRevision()
-            val response = todoApi.delete(revision = lastRevision, id = id)
-            revisionRepository.setRevision(response.revision!!)
+            val response = todoApi.delete(id = id)
             return@retryWithAttempts ResultData.success<Nothing>()
         }.also { if(it is ResultData.Failure) revisionRepository.editLocalChanges(true) }
     }
@@ -108,13 +110,11 @@ class TodoItemsRepositoryImpl @Inject constructor(
             )
             todoDao.update(item = updatedItem)
             return@withContext retryWithAttempts(MAX_ATTEMPTS, "Ошибка при изменении дела") {
-                val lastRevision = revisionRepository.getLastRevision()
                 val nwRequest = NWRequest(
                     element = item.toNetworkItem()
                 )
                 val response =
-                    todoApi.update(revision = lastRevision, id = item.id, itemRequest = nwRequest)
-                revisionRepository.setRevision(response.revision!!)
+                    todoApi.update(id = item.id, itemRequest = nwRequest)
                 return@retryWithAttempts ResultData.success<Nothing>()
             }.also { if(it is ResultData.Failure) revisionRepository.editLocalChanges(true) }
         }
@@ -136,9 +136,6 @@ class TodoItemsRepositoryImpl @Inject constructor(
 
         retryWithAttempts(MAX_ATTEMPTS, "Ошибка при получении дела") {
             val response = todoApi.getByID(id = id)
-            response.revision?.let {
-                revisionRepository.setRevision(it)
-            }
             return@retryWithAttempts ResultData.success(todoDao.getById(itemId = id))
         }
 
@@ -147,9 +144,6 @@ class TodoItemsRepositoryImpl @Inject constructor(
     override suspend fun pullItemsFromServer(): ResultData<Nothing> = withContext(Dispatchers.IO) {
         retryWithAttempts(MAX_ATTEMPTS, "Ошибка при обновлении данных") {
             val response = todoApi.getAll()
-            response.revision?.let {
-                revisionRepository.setRevision(it)
-            }
             todoDao.deleteAll()
             val newList = response.list?.map {
                 it.toTodoItem() ?: throw IllegalArgumentException("Item from server can not be null")
@@ -170,8 +164,7 @@ class TodoItemsRepositoryImpl @Inject constructor(
             val nwRequestList = NWRequestList(
                 list = roomItems
             )
-            val response = todoApi.patch(revision, nwRequestList)
-            revisionRepository.setRevision(response.revision!!)
+            val response = todoApi.patch(nwRequestList)
             return@retryWithAttempts ResultData.success()
         }
     }

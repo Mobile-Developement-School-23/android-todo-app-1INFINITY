@@ -6,13 +6,15 @@ import dagger.Provides
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Converter
 import retrofit2.Retrofit
 import ru.mirea.ivashechkinav.todo.data.retrofit.TodoApi
+import ru.mirea.ivashechkinav.todo.data.retrofit.interceptors.RevisionInterceptor
+import ru.mirea.ivashechkinav.todo.data.retrofit.interceptors.TokenInterceptor
 
 data class RetrofitConfig(val baseUrl: String)
-data class InterceptorConfig(val apiKeyName: String, val apiKeyValue: String)
+data class TokenInterceptorConfig(val apiKeyName: String, val apiKeyValue: String)
+data class ApiToken(val token: String)
 
 @Module
 interface RemoteStorageModule {
@@ -36,29 +38,37 @@ interface RemoteStorageModule {
         }
 
         @Provides
-        fun provideOkHttpClient(interceptorConfig: InterceptorConfig): OkHttpClient {
+        fun provideOkHttpClient(
+            tokenInterceptor: TokenInterceptor,
+            revisionInterceptor: RevisionInterceptor
+        ): OkHttpClient {
             return OkHttpClient.Builder()
-                .addNetworkInterceptor(HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
-                .addInterceptor { chain ->
-                    val request =
-                        chain.request().newBuilder()
-                            .addHeader(interceptorConfig.apiKeyName, interceptorConfig.apiKeyValue)
-                            .build()
-                    return@addInterceptor chain.proceed(request)
-                }
+                .addInterceptor(tokenInterceptor)
+                .addInterceptor(revisionInterceptor)
                 .build()
         }
+
         @Provides
         fun provideConverterFactory(): Converter.Factory {
             return Json.asConverterFactory("application/json".toMediaType())
         }
+
         @Provides
         fun provideRetrofitConfig(): RetrofitConfig {
             return RetrofitConfig(baseUrl = "https://beta.mrdekk.ru/todobackend/")
         }
+
         @Provides
-        fun provideInterceptorConfig(): InterceptorConfig {
-            return InterceptorConfig(apiKeyName = "Authorization", apiKeyValue = "Bearer sanjakate")
+        fun provideInterceptorConfig(apiToken: ApiToken): TokenInterceptorConfig {
+            return TokenInterceptorConfig(
+                apiKeyName = "Authorization",
+                apiKeyValue = "Bearer ${apiToken.token}"
+            )
+        }
+
+        @Provides
+        fun provideApiToken(): ApiToken {
+            return ApiToken(token = "sanjakate")
         }
     }
 }
