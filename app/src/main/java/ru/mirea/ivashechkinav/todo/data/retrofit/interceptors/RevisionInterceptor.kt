@@ -6,8 +6,10 @@ import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Interceptor
 import okhttp3.Response
 import ru.mirea.ivashechkinav.todo.data.sharedprefs.RevisionRepository
+import ru.mirea.ivashechkinav.todo.di.components.AppScope
 import javax.inject.Inject
 
+@AppScope
 class RevisionInterceptor @Inject constructor(
     private val revisionRepo: RevisionRepository
 ) : Interceptor {

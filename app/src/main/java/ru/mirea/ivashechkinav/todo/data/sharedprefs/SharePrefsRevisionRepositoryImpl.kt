@@ -3,8 +3,10 @@ package ru.mirea.ivashechkinav.todo.data.sharedprefs
 import android.content.Context
 import android.content.SharedPreferences
 import ru.mirea.ivashechkinav.todo.di.components.AppContext
+import ru.mirea.ivashechkinav.todo.di.components.AppScope
 import javax.inject.Inject
 
+@AppScope
 class SharePrefsRevisionRepositoryImpl @Inject constructor(@AppContext private val applicationContext: Context): RevisionRepository {
 
     private val sharedPreferences: SharedPreferences by lazy {

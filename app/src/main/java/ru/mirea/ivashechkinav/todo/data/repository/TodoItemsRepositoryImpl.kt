@@ -18,11 +18,12 @@ import ru.mirea.ivashechkinav.todo.data.retrofit.models.NWRequestList
 import ru.mirea.ivashechkinav.todo.data.retrofit.models.toNetworkItem
 import ru.mirea.ivashechkinav.todo.data.retrofit.models.toTodoItem
 import ru.mirea.ivashechkinav.todo.data.room.TodoDao
+import ru.mirea.ivashechkinav.todo.di.components.AppScope
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 import javax.inject.Inject
 
-
+@AppScope
 class TodoItemsRepositoryImpl @Inject constructor(
     private val todoDao: TodoDao,
     private val todoApi: TodoApi,
