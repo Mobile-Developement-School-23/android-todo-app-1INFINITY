@@ -125,6 +125,7 @@ class TodoItemsRepositoryImpl @Inject constructor(
                 } ?: throw ServerSideException()
 
                 todoDao.upsertTodoList(serverList)
+                todoApi.patch(NWRequestList(todoDao.getAll().map {it.toNetworkItem()}))
                 ResultData.Success(Unit)
             } catch (e: Exception) {
                 handleException(e)
