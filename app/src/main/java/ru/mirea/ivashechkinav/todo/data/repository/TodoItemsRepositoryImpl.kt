@@ -62,7 +62,7 @@ class TodoItemsRepositoryImpl @Inject constructor(
                 todoApi.update(id = item.id, itemRequest = NWRequest(item.toNetworkItem()))
                 ResultData.Success(Unit)
             } catch (e: Exception) {
-                ResultData.Failure(e)
+                handleException(e)
             }
         }
 
@@ -96,9 +96,9 @@ class TodoItemsRepositoryImpl @Inject constructor(
             return@withContext try {
                 val response = todoApi.getAll()
                 todoDao.deleteAll()
-                val newList = response.list!!.map {
-                    it.toTodoItem()!!
-                }
+                val newList = response.list?.map {
+                    it.toTodoItem() ?: throw ServerSideException()
+                } ?: throw ServerSideException()
                 todoDao.save(newList)
                 ResultData.Success(Unit)
             } catch (e: Exception) {
@@ -111,6 +111,20 @@ class TodoItemsRepositoryImpl @Inject constructor(
             return@withContext try {
                 val roomItems = todoDao.getAll().map { it.toNetworkItem() }
                 todoApi.patch(NWRequestList(list = roomItems))
+                ResultData.Success(Unit)
+            } catch (e: Exception) {
+                handleException(e)
+            }
+        }
+
+    override suspend fun syncItems(): ResultData<Unit> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                val serverList = todoApi.getAll().list?.map{
+                    it.toTodoItem() ?: throw ServerSideException()
+                } ?: throw ServerSideException()
+
+                todoDao.upsertTodoList(serverList)
                 ResultData.Success(Unit)
             } catch (e: Exception) {
                 handleException(e)

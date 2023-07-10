@@ -15,9 +15,9 @@ import retrofit2.HttpException
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
 import ru.mirea.ivashechkinav.todo.core.DuplicateItemException
 import ru.mirea.ivashechkinav.todo.core.NetworkException
+import ru.mirea.ivashechkinav.todo.core.OperationRepeatHandler
 import ru.mirea.ivashechkinav.todo.core.ServerSideException
 import ru.mirea.ivashechkinav.todo.core.TodoItemNotFoundException
-import ru.mirea.ivashechkinav.todo.core.retryWithAttempts
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
@@ -33,6 +33,9 @@ class TaskViewModel @Inject constructor(private val repository: TodoItemsReposit
         Log.e("Coroutine", "Error: ", throwable)
         CoroutineScope(context).launch { handleException(throwable) }
     }
+    private val handler = OperationRepeatHandler(
+        syncAction = { repository.syncItems() }
+    )
     private val _event: MutableSharedFlow<EventUi> = MutableSharedFlow()
 
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState())
@@ -77,9 +80,9 @@ class TaskViewModel @Inject constructor(private val repository: TodoItemsReposit
         val newItem = validateSaveTask() ?: return
 
         if (uiState.value.id == null) {
-            retryWithAttempts { repository.addItem(newItem) }
+            handler.retryWithAttempts { repository.addItem(newItem) }
         } else {
-            retryWithAttempts { repository.updateItem(newItem) }
+            handler.retryWithAttempts { repository.updateItem(newItem) }
         }
         setEffect { EffectUi.ToBackFragment }
     }
@@ -87,7 +90,7 @@ class TaskViewModel @Inject constructor(private val repository: TodoItemsReposit
     private suspend fun onDeleteButtonClicked() {
         val currentTodoItem = uiState.value
         currentTodoItem.id?.let {
-            retryWithAttempts { repository.deleteItemById(it) }
+            handler.retryWithAttempts { repository.deleteItemById(it) }
         }
         setEffect { EffectUi.ToBackFragment }
     }
@@ -124,7 +127,7 @@ class TaskViewModel @Inject constructor(private val repository: TodoItemsReposit
     }
 
     private suspend fun onTodoItemIdLoaded(event: EventUi.OnTodoItemIdLoaded) {
-        val result = retryWithAttempts { repository.getItemById(event.todoItemId) }
+        val result = handler.retryWithAttempts { repository.getItemById(event.todoItemId) }
         if (result is ResultData.Success) {
             val todoItem = result.value ?: return
             setState {

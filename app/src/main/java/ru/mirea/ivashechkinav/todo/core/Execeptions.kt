@@ -9,4 +9,4 @@ class UnauthorizedException : AppException()
 class ServerSideException : AppException()
 class DuplicateItemException : AppException()
 class NetworkException : AppException()
-
+class UnableToPerformOperation: AppException()

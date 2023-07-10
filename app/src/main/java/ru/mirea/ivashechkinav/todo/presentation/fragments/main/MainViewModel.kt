@@ -13,9 +13,9 @@ import retrofit2.HttpException
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
 import ru.mirea.ivashechkinav.todo.core.DuplicateItemException
 import ru.mirea.ivashechkinav.todo.core.NetworkException
+import ru.mirea.ivashechkinav.todo.core.OperationRepeatHandler
 import ru.mirea.ivashechkinav.todo.core.ServerSideException
 import ru.mirea.ivashechkinav.todo.core.TodoItemNotFoundException
-import ru.mirea.ivashechkinav.todo.core.retryWithAttempts
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
@@ -32,7 +32,9 @@ class MainViewModel @Inject constructor(
         Log.e("Coroutine", "Error: ", throwable)
         CoroutineScope(context).launch { handleException(throwable) }
     }
-
+    private val handler = OperationRepeatHandler(
+        syncAction = { repository.syncItems() }
+    )
     private val _event: MutableSharedFlow<EventUi> = MutableSharedFlow()
 
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState())
@@ -60,11 +62,9 @@ class MainViewModel @Inject constructor(
 
     init {
         viewModelScope.launch(exceptionHandler) {
-            pullItemsFromServer()
+            syncItems()
             networkChangeReceiver.stateFlow.collectLatest { isConnected ->
-                handleConnectChange(
-                    isConnected
-                )
+                handleConnectChange(isConnected)
             }
         }
         viewModelScope.launch(exceptionHandler) {
@@ -80,9 +80,7 @@ class MainViewModel @Inject constructor(
             setEffect { EffectUi.ShowSnackbar("Нет соединения с интернетом") }
         } else {
             setEffect { EffectUi.ShowSnackbar("Cоединение с интернетом появилось") }
-            val result = retryWithAttempts { repository.patchItemsToServer() }
-            if (result is ResultData.Failure)
-                pullItemsFromServer()
+            syncItems()
         }
     }
 
@@ -119,30 +117,33 @@ class MainViewModel @Inject constructor(
 
             is EventUi.OnItemSwipeToCheck -> {
                 val itemChecked = event.todoItem.copy(isComplete = !event.todoItem.isComplete)
-                retryWithAttempts { repository.updateItem(itemChecked) }
+                handler.retryWithAttempts { repository.updateItem(itemChecked) }
             }
 
             is EventUi.OnItemCheckedChange -> {
                 val itemChecked = event.todoItem.copy(isComplete = !event.todoItem.isComplete)
-                retryWithAttempts { repository.updateItem(itemChecked) }
+                handler.retryWithAttempts { repository.updateItem(itemChecked) }
             }
 
             is EventUi.OnItemSwipeToDelete -> {
-                retryWithAttempts { repository.deleteItemById(event.todoItem.id) }
+                handler.retryWithAttempts { repository.deleteItemById(event.todoItem.id) }
             }
 
             is EventUi.OnFloatingButtonClick -> {
                 setEffect { EffectUi.ToTaskFragmentCreate }
             }
 
-            is EventUi.OnSnackBarPullRetryButtonClicked -> pullItemsFromServer()
+            is EventUi.OnSnackBarPullRetryButtonClicked -> syncItems()
         }
     }
 
-    private suspend fun pullItemsFromServer() {
-        val result = retryWithAttempts { repository.pullItemsFromServer() }
-        if (result is ResultData.Failure) {
-            setEffect { EffectUi.ShowSnackbarWithPullRetry }
+    private suspend fun syncItems() {
+        val syncResult = handler.retryWithAttempts { repository.syncItems() }
+        if (syncResult is ResultData.Failure) {
+            val pullResult = handler.retryWithAttempts { repository.pullItemsFromServer() }
+            if (pullResult is ResultData.Failure) {
+                setEffect { EffectUi.ShowSnackbarWithPullRetry }
+            }
         }
     }
 
