@@ -6,6 +6,6 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class NWResponse(
     val status: String?,
-    val element: NWTodoItem?,
+    val element: NWTodoItem,
     val revision: Int?
 )

@@ -16,7 +16,7 @@ class RepeatRequestWorker @AssistedInject constructor(
 ) : CoroutineWorker(context, workerParameters) {
 
     override suspend fun doWork(): Result {
-        return when (repository.pullItemsFromServer()) {
+        return when (repository.syncItems()) {
             is ResultData.Success -> Result.success()
             is ResultData.Failure -> Result.retry()
             else -> Result.success()

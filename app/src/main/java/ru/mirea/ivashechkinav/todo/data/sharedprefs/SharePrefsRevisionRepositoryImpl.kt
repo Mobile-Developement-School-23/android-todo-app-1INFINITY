@@ -7,7 +7,9 @@ import ru.mirea.ivashechkinav.todo.di.components.AppScope
 import javax.inject.Inject
 
 @AppScope
-class SharePrefsRevisionRepositoryImpl @Inject constructor(@AppContext private val applicationContext: Context): RevisionRepository {
+class SharePrefsRevisionRepositoryImpl @Inject constructor(
+    @AppContext private val applicationContext: Context
+) : RevisionRepository {
 
     private val sharedPreferences: SharedPreferences by lazy {
         applicationContext.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
@@ -21,17 +23,8 @@ class SharePrefsRevisionRepositoryImpl @Inject constructor(@AppContext private v
         sharedPreferences.edit().putInt(KEY_REVISION, revision).apply()
     }
 
-    override fun hasLocalChanges(): Boolean {
-        return sharedPreferences.getBoolean(KEY_CHANGE, false)
-    }
-
-    override fun editLocalChanges(isSomethingChanged: Boolean) {
-        sharedPreferences.edit().putBoolean(KEY_CHANGE, isSomethingChanged).apply()
-    }
-
     companion object {
         private const val PREF_NAME = "RevisionPrefs"
         private const val KEY_REVISION = "revision"
-        private const val KEY_CHANGE = "change"
     }
 }

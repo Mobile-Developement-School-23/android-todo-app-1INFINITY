@@ -1,7 +1,14 @@
 package ru.mirea.ivashechkinav.todo.data.repository
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
@@ -51,10 +58,6 @@ class TodoItemsRepositoryImpl @Inject constructor(
             }
         }
 
-    override fun getTodoItemsFlow(): Flow<List<TodoItem>> {
-        return todoDao.getAllFlow()
-    }
-
     override suspend fun updateItem(item: TodoItem): ResultData<Unit> =
         withContext(Dispatchers.IO) {
             return@withContext try {
@@ -69,7 +72,7 @@ class TodoItemsRepositoryImpl @Inject constructor(
     override suspend fun getTodoItemsFlowWith(isChecked: Boolean) =
         withContext(Dispatchers.IO) {
             if (isChecked) {
-                return@withContext todoDao.getAllFlowWithCheckedState(isChecked = false)
+                return@withContext todoDao.getAllFlowUnchecked()
             }
             return@withContext todoDao.getAllFlow()
         }
@@ -91,41 +94,14 @@ class TodoItemsRepositoryImpl @Inject constructor(
             }
         }
 
-    override suspend fun pullItemsFromServer(): ResultData<Unit> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val response = todoApi.getAll()
-                todoDao.deleteAll()
-                val newList = response.list?.map {
-                    it.toTodoItem() ?: throw ServerSideException()
-                } ?: throw ServerSideException()
-                todoDao.save(newList)
-                ResultData.Success(Unit)
-            } catch (e: Exception) {
-                handleException(e)
-            }
-        }
-
-    override suspend fun patchItemsToServer(): ResultData<Unit> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val roomItems = todoDao.getAll().map { it.toNetworkItem() }
-                todoApi.patch(NWRequestList(list = roomItems))
-                ResultData.Success(Unit)
-            } catch (e: Exception) {
-                handleException(e)
-            }
-        }
-
     override suspend fun syncItems(): ResultData<Unit> =
         withContext(Dispatchers.IO) {
             return@withContext try {
-                val serverList = todoApi.getAll().list?.map{
-                    it.toTodoItem() ?: throw ServerSideException()
-                } ?: throw ServerSideException()
-
-                todoDao.upsertTodoList(serverList)
-                todoApi.patch(NWRequestList(todoDao.getAll().map {it.toNetworkItem()}))
+                val serverList = todoApi.getAll().list.map{ it.toTodoItem() }
+                serverList.forEach { todoDao.upsertItem(it) }
+                todoApi.patch(
+                    NWRequestList(todoDao.getAll().map {it.toNetworkItem()})
+                )
                 ResultData.Success(Unit)
             } catch (e: Exception) {
                 handleException(e)

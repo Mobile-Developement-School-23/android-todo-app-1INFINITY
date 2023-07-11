@@ -18,11 +18,5 @@ interface TodoItemsRepository {
 
     suspend fun getItemById(id: String): ResultData<TodoItem>
 
-    suspend fun pullItemsFromServer(): ResultData<Unit>
-
-    fun getTodoItemsFlow(): Flow<List<TodoItem>>
-
-    suspend fun patchItemsToServer(): ResultData<Unit>
-
     suspend fun syncItems(): ResultData<Unit>
 }

@@ -5,9 +5,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
@@ -19,11 +23,12 @@ import ru.mirea.ivashechkinav.todo.core.TodoItemNotFoundException
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
-import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.*
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.EffectUi
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.EventUi
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.UiState
 import ru.mirea.ivashechkinav.todo.presentation.receiver.NetworkChangeReceiver
 import javax.inject.Inject
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MainViewModel @Inject constructor(
     private val repository: TodoItemsRepository,
     private val networkChangeReceiver: NetworkChangeReceiver
@@ -116,12 +121,18 @@ class MainViewModel @Inject constructor(
             }
 
             is EventUi.OnItemSwipeToCheck -> {
-                val itemChecked = event.todoItem.copy(isComplete = !event.todoItem.isComplete)
+                val itemChecked = event.todoItem.copy(
+                    isComplete = !event.todoItem.isComplete,
+                    changeTimestamp = System.currentTimeMillis() / 1000
+                )
                 handler.retryWithAttempts { repository.updateItem(itemChecked) }
             }
 
             is EventUi.OnItemCheckedChange -> {
-                val itemChecked = event.todoItem.copy(isComplete = !event.todoItem.isComplete)
+                val itemChecked = event.todoItem.copy(
+                    isComplete = !event.todoItem.isComplete,
+                    changeTimestamp = System.currentTimeMillis() / 1000
+                )
                 handler.retryWithAttempts { repository.updateItem(itemChecked) }
             }
 
@@ -140,10 +151,7 @@ class MainViewModel @Inject constructor(
     private suspend fun syncItems() {
         val syncResult = handler.retryWithAttempts { repository.syncItems() }
         if (syncResult is ResultData.Failure) {
-            val pullResult = handler.retryWithAttempts { repository.pullItemsFromServer() }
-            if (pullResult is ResultData.Failure) {
-                setEffect { EffectUi.ShowSnackbarWithPullRetry }
-            }
+            setEffect { EffectUi.ShowSnackbarWithPullRetry }
         }
     }
 

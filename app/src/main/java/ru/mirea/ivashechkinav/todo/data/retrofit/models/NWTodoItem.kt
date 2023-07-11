@@ -1,5 +1,6 @@
 package ru.mirea.ivashechkinav.todo.data.retrofit.models
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.data.models.parseImportanceFromNetwork
@@ -8,15 +9,18 @@ import ru.mirea.ivashechkinav.todo.data.models.toNetworkFormat
 
 @Serializable
 data class NWTodoItem(
-    val id: String? = null,
-    val text: String? = null,
-    val importance: String? = null,
-    val deadline: Long? = null,
-    val done: Boolean? = null,
-    val color: String? = null,
-    val created_at: Long? = null,
-    val changed_at: Long? = null,
-    val last_updated_by: String? = null
+    val id: String,
+    val text: String,
+    val importance: String,
+    val deadline: Long?,
+    val done: Boolean,
+    val color: String?,
+    @SerialName("created_at")
+    val createdAt: Long,
+    @SerialName("changed_at")
+    val changedAt: Long,
+    @SerialName("last_updated_by")
+    val lastUpdatedBy: String
 )
 
 fun TodoItem.toNetworkItem(): NWTodoItem {
@@ -26,20 +30,21 @@ fun TodoItem.toNetworkItem(): NWTodoItem {
         importance = importance.toNetworkFormat(),
         deadline = deadlineTimestamp,
         done = isComplete,
-        created_at = creationTimestamp,
-        changed_at = changeTimestamp,
-        last_updated_by = "cd567"
+        color = null,
+        createdAt = creationTimestamp,
+        changedAt = changeTimestamp,
+        lastUpdatedBy = "cd567"
     )
 }
 
-fun NWTodoItem.toTodoItem(): TodoItem? {
+fun NWTodoItem.toTodoItem(): TodoItem {
     return TodoItem(
-        id = id ?: return null,
-        text = text ?: return null,
-        importance = parseImportanceFromNetwork(importance ?: return null),
+        id = id,
+        text = text,
+        importance = parseImportanceFromNetwork(importance),
         deadlineTimestamp = deadline,
-        isComplete = done ?: return null,
-        creationTimestamp = created_at ?: return null,
-        changeTimestamp = changed_at ?: return null
+        isComplete = done,
+        creationTimestamp = createdAt,
+        changeTimestamp = changedAt
     )
 }
