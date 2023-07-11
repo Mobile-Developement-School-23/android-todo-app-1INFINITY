@@ -34,6 +34,6 @@ class OperationRepeatHandler(
             OutOfSyncDataException::class,
             ServerSideException::class
         )
-        const val DELAY = 100L
+        const val DELAY = 0L
     }
 }

@@ -24,13 +24,17 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.R
+import ru.mirea.ivashechkinav.todo.core.textChanges
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.databinding.FragmentTaskBinding
 import ru.mirea.ivashechkinav.todo.presentation.MainActivity
-import ru.mirea.ivashechkinav.todo.core.textChanges
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.EffectUi
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.EventUi
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.FragmentViewState
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.UiState
 import java.text.SimpleDateFormat
-import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.*
-import java.util.*
+import java.util.Calendar
+import java.util.Locale
 import javax.inject.Inject
 
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
@@ -40,7 +44,9 @@ class TaskFragment : Fragment() {
     lateinit var viewModelFactory: ViewModelProvider.Factory
     private val vm: TaskViewModel by viewModels { viewModelFactory }
 
-    private lateinit var binding: FragmentTaskBinding
+    private var _binding: FragmentTaskBinding? = null
+    private val binding get() = _binding!!
+
     private val args: TaskFragmentArgs by navArgs()
     private var popupMenu: PopupMenu? = null
 
@@ -48,7 +54,7 @@ class TaskFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        binding = FragmentTaskBinding.inflate(inflater, container, false)
+        _binding = FragmentTaskBinding.inflate(inflater, container, false)
         (requireActivity() as MainActivity)
             .activityComponent
             .taskFragmentComponentFactory()
@@ -98,7 +104,7 @@ class TaskFragment : Fragment() {
 
     private fun initEditTextObserve() {
         lifecycleScope.launch {
-            binding.edTodoItemText.textChanges().debounce(300).collectLatest {
+            binding.edTodoItemText.textChanges().debounce(textDebounceDelay).collectLatest {
                 vm.setEvent(EventUi.OnTodoTextEdited(it.toString()))
             }
         }
@@ -146,6 +152,7 @@ class TaskFragment : Fragment() {
         binding.flImportanceMenu.setOnClickListener { currentPopupMenu.show() }
         currentPopupMenu.setOnMenuItemClickListener(this::onMenuItemClick)
     }
+
     private fun onMenuItemClick(menuItem: MenuItem): Boolean {
         val newImportance = when (menuItem.itemId) {
             R.id.menu_item_none -> Importance.LOW
@@ -158,6 +165,7 @@ class TaskFragment : Fragment() {
         )
         return true
     }
+
     private fun changeImportanceValue(importance: Importance) {
         val currentPopupMenu = popupMenu ?: return
         when (importance) {
@@ -194,8 +202,8 @@ class TaskFragment : Fragment() {
         val year = c.get(Calendar.YEAR)
         val month = c.get(Calendar.MONTH)
         val day = c.get(Calendar.DAY_OF_MONTH)
-        val dpd = DatePickerDialog(requireActivity(), { view, year, monthOfYear, dayOfMonth ->
-            c.set(Calendar.YEAR, year)
+        val dpd = DatePickerDialog(requireActivity(), { view, pickerYear, monthOfYear, dayOfMonth ->
+            c.set(Calendar.YEAR, pickerYear)
             c.set(Calendar.MONTH, monthOfYear)
             c.set(Calendar.DAY_OF_MONTH, dayOfMonth)
 
@@ -217,7 +225,13 @@ class TaskFragment : Fragment() {
         binding.swDeadline.isChecked = true
     }
 
+    override fun onDestroyView() {
+        super.onDestroyView()
+        _binding = null
+    }
+
     companion object {
+        const val textDebounceDelay = 300L
         val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale.getDefault())
     }
 }

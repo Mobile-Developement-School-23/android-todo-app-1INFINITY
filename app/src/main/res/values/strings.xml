@@ -17,4 +17,12 @@
     <string name="popup_first_option">Нет</string>
     <string name="popup_second_option">Низкий</string>
     <string name="popup_third_option">!! Высокий</string>
+    <string name="connection_missing_message">Отсутствует подключение</string>
+    <string name="server_error_message">Ошибка на сервере</string>
+    <string name="unknown_error_message">Неизвестная ошибка</string>
+    <string name="description_needed_message">Необходимо ввести описание дела</string>
+    <string name="loading_error_message">Произошла ошибка при загрузке списка из интернета</string>
+    <string name="retry_action_text">Повторить</string>
+    <string name="connection_lost_message">Нет соединения с интернетом</string>
+    <string name="connection_established_message">Cоединение с интернетом появилось</string>
 </resources>

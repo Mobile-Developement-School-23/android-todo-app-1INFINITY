@@ -12,11 +12,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import retrofit2.HttpException
+import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
 import ru.mirea.ivashechkinav.todo.core.DuplicateItemException
 import ru.mirea.ivashechkinav.todo.core.NetworkException
 import ru.mirea.ivashechkinav.todo.core.OperationRepeatHandler
 import ru.mirea.ivashechkinav.todo.core.ServerSideException
+import ru.mirea.ivashechkinav.todo.core.TextHelper
 import ru.mirea.ivashechkinav.todo.core.TodoItemNotFoundException
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
@@ -28,14 +30,14 @@ import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.UiSt
 import java.util.UUID
 import javax.inject.Inject
 
-class TaskViewModel @Inject constructor(private val repository: TodoItemsRepository) : ViewModel() {
+class TaskViewModel @Inject constructor(
+    private val repository: TodoItemsRepository, private val textHelper: TextHelper
+) : ViewModel() {
     private val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
         Log.e("Coroutine", "Error: ", throwable)
         CoroutineScope(context).launch { handleException(throwable) }
     }
-    private val handler = OperationRepeatHandler(
-        syncAction = { repository.syncItems() }
-    )
+    private val handler = OperationRepeatHandler(syncAction = { repository.syncItems() })
     private val _event: MutableSharedFlow<EventUi> = MutableSharedFlow()
 
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState())
@@ -98,8 +100,7 @@ class TaskViewModel @Inject constructor(private val repository: TodoItemsReposit
     private fun onTodoTextEdited(event: EventUi.OnTodoTextEdited) {
         setState {
             copy(
-                text = event.editedText,
-                viewState = FragmentViewState.Update
+                text = event.editedText, viewState = FragmentViewState.Update
             )
         }
     }
@@ -145,23 +146,24 @@ class TaskViewModel @Inject constructor(private val repository: TodoItemsReposit
 
     private fun handleException(e: Throwable) {
         val errorText = when (e) {
-            is HttpException, is NetworkException -> "Отсутствует подключение"
+            is HttpException, is NetworkException -> textHelper.getString(R.string.connection_missing_message)
             is ServerSideException,
             is BadRequestException,
             is TodoItemNotFoundException,
-            is DuplicateItemException
-            -> "Ошибка на сервере"
+            is DuplicateItemException -> textHelper.getString(
+                R.string.server_error_message
+            )
 
-            else -> "Неизвестная ошибка"
+            else -> textHelper.getString(R.string.unknown_error_message)
         }
         setEffect { EffectUi.ShowSnackbar(message = errorText) }
     }
 
     private fun validateSaveTask(): TodoItem? {
-        val currentTime = System.currentTimeMillis() / 1000
+        val currentTime = System.currentTimeMillis() / SECONDS_DIVIDER
         val currentTodoItem = uiState.value
         if (currentTodoItem.text.isNullOrEmpty()) {
-            setEffect { EffectUi.ShowSnackbar("Необходимо ввести описание дела") }
+            setEffect { EffectUi.ShowSnackbar(textHelper.getString(R.string.description_needed_message)) }
             return null
         }
         return TodoItem(
@@ -173,5 +175,8 @@ class TaskViewModel @Inject constructor(private val repository: TodoItemsReposit
             creationTimestamp = currentTodoItem.creationTimestamp ?: currentTime,
             changeTimestamp = currentTime
         )
+    }
+    companion object {
+        const val SECONDS_DIVIDER = 1000
     }
 }

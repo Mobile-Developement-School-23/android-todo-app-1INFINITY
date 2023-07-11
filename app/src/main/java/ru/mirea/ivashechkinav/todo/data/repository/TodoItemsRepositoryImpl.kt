@@ -1,14 +1,6 @@
 package ru.mirea.ivashechkinav.todo.data.repository
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
@@ -28,6 +20,7 @@ import ru.mirea.ivashechkinav.todo.data.room.TodoDao
 import ru.mirea.ivashechkinav.todo.di.components.AppScope
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
+import java.net.HttpURLConnection
 import javax.inject.Inject
 
 @AppScope
@@ -84,23 +77,23 @@ class TodoItemsRepositoryImpl @Inject constructor(
 
     override suspend fun getItemById(id: String): ResultData<TodoItem> =
         withContext(Dispatchers.IO) {
-           try {
+            try {
                 todoDao.getById(itemId = id)?.let {
                     return@withContext ResultData.Success(it)
                 }
-               return@withContext  ResultData.Failure(TodoItemNotFoundException())
+                return@withContext ResultData.Failure(TodoItemNotFoundException())
             } catch (e: Exception) {
-               return@withContext  handleException(e)
+                return@withContext handleException(e)
             }
         }
 
     override suspend fun syncItems(): ResultData<Unit> =
         withContext(Dispatchers.IO) {
             return@withContext try {
-                val serverList = todoApi.getAll().list.map{ it.toTodoItem() }
+                val serverList = todoApi.getAll().list.map { it.toTodoItem() }
                 serverList.forEach { todoDao.upsertItem(it) }
                 todoApi.patch(
-                    NWRequestList(todoDao.getAll().map {it.toNetworkItem()})
+                    NWRequestList(todoDao.getAll().map { it.toNetworkItem() })
                 )
                 ResultData.Success(Unit)
             } catch (e: Exception) {
@@ -115,15 +108,15 @@ class TodoItemsRepositoryImpl @Inject constructor(
                     e.response()?.errorBody()?.string().toString()
                         .let { message ->
                             when (e.code()) {
-                                400 -> when {
+                                HttpURLConnection.HTTP_BAD_REQUEST -> when {
                                     message.contains("unsynchronized") -> OutOfSyncDataException()
                                     message.contains("duplicate") -> DuplicateItemException()
                                     else -> BadRequestException()
                                 }
 
-                                500 -> ServerSideException()
-                                404 -> TodoItemNotFoundException()
-                                401 -> UnauthorizedException()
+                                HttpURLConnection.HTTP_INTERNAL_ERROR -> ServerSideException()
+                                HttpURLConnection.HTTP_NOT_FOUND -> TodoItemNotFoundException()
+                                HttpURLConnection.HTTP_UNAUTHORIZED -> UnauthorizedException()
                                 else -> e
                             }
                         }

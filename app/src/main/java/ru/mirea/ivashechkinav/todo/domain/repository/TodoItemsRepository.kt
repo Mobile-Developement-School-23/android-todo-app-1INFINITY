@@ -1,7 +1,6 @@
 package ru.mirea.ivashechkinav.todo.domain.repository
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.FlowCollector
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 
 interface TodoItemsRepository {
