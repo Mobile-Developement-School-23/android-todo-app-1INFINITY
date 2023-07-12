@@ -132,34 +132,40 @@ class MainViewModel @Inject constructor(
 
             is EventUi.OnItemSelected -> {
                 viewModelScope.launch(exceptionHandler) {
-                    val itemId = event.todoItem.id
+                    val itemId = event.itemId
                     setEffect { EffectUi.ToTaskFragmentUpdate(itemId) }
                 }
             }
 
             is EventUi.OnItemSwipeToCheck -> {
                 viewModelScope.launch(exceptionHandler) {
-                    val itemChecked = event.todoItem.copy(
-                        isComplete = !event.todoItem.isComplete,
-                        changeTimestamp = System.currentTimeMillis() / 1000
-                    )
-                    handler.retryWithAttempts { repository.updateItem(itemChecked) }
+                    val itemId = event.itemId
+                    val currentTimestamp = System.currentTimeMillis() / 1000
+                    handler.retryWithAttempts {
+                        repository.toggleItemCheckedState(
+                            itemId,
+                            currentTimestamp
+                        )
+                    }
                 }
             }
 
             is EventUi.OnItemCheckedChange -> {
                 viewModelScope.launch(exceptionHandler) {
-                    val itemChecked = event.todoItem.copy(
-                        isComplete = !event.todoItem.isComplete,
-                        changeTimestamp = System.currentTimeMillis() / 1000
-                    )
-                    handler.retryWithAttempts { repository.updateItem(itemChecked) }
+                    val itemId = event.itemId
+                    val currentTimestamp = System.currentTimeMillis() / 1000
+                    handler.retryWithAttempts {
+                        repository.toggleItemCheckedState(
+                            itemId,
+                            currentTimestamp
+                        )
+                    }
                 }
             }
 
             is EventUi.OnItemSwipeToDelete -> {
                 viewModelScope.launch(exceptionHandler) {
-                    handler.retryWithAttempts { repository.deleteItemById(event.todoItem.id) }
+                    handler.retryWithAttempts { repository.deleteItemById(event.itemId) }
                 }
             }
 

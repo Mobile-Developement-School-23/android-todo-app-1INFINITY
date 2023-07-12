@@ -19,16 +19,15 @@ class TodoAdapter @AssistedInject constructor(
     @AppContext private val applicationContext: Context
 ) : ListAdapter<TodoItem, TodoItemViewHolder>(DiffCallback()), View.OnClickListener {
     interface Listener {
-        fun onItemClicked(todoItem: TodoItem)
-        fun onItemChecked(todoItem: TodoItem)
+        fun onItemClicked(itemId: String)
+        fun onItemChecked(itemId: String)
     }
 
     override fun onClick(v: View) {
-        val itemPos = v.tag as Int
-        val todoItem = this.getItem(itemPos)
+        val itemId = v.tag as String
         when (v.id) {
-            R.id.cbIsComplete ->  listener.onItemChecked(todoItem)
-            else -> listener.onItemClicked(todoItem)
+            R.id.cbIsComplete -> listener.onItemChecked(itemId)
+            else -> listener.onItemClicked(itemId)
         }
     }
 
@@ -54,21 +53,24 @@ class TodoAdapter @AssistedInject constructor(
         holder.apply {
             setItemBackground(position)
             onBind(item)
-            root.tag = position
-            isCompleteCheckBox.tag = position
+            root.tag = item.id
+            isCompleteCheckBox.tag = item.id
         }
     }
+
     private fun TodoItemViewHolder.setItemBackground(itemPosition: Int) {
         val maxPosition = currentList.size - 1
-        when(itemPosition) {
+        when (itemPosition) {
             0 -> {
                 this.itemView.setBackgroundResource(R.drawable.todo_item_upper_background)
             }
+
             maxPosition -> {
                 this.itemView.setBackgroundResource(R.drawable.todo_item_lower_background)
             }
         }
     }
+
     private class DiffCallback : DiffUtil.ItemCallback<TodoItem>() {
         override fun areItemsTheSame(oldItem: TodoItem, newItem: TodoItem) =
             oldItem.id == newItem.id
@@ -76,6 +78,7 @@ class TodoAdapter @AssistedInject constructor(
         override fun areContentsTheSame(oldItem: TodoItem, newItem: TodoItem) =
             oldItem == newItem
     }
+
     @ActivityScope
     @AssistedFactory
     interface TodoAdapterFactory {

@@ -116,12 +116,12 @@ class MainFragment : Fragment() {
         todoRecyclerView = binding.rwTodoList
         todoAdapter = todoAdapterFactory.create(
             object : TodoAdapter.Listener {
-                override fun onItemClicked(todoItem: TodoItem) {
-                    vm.setEvent(EventUi.OnItemSelected(todoItem))
+                override fun onItemClicked(itemId: String) {
+                    vm.setEvent(EventUi.OnItemSelected(itemId))
                 }
 
-                override fun onItemChecked(todoItem: TodoItem) {
-                    vm.setEvent(EventUi.OnItemCheckedChange(todoItem))
+                override fun onItemChecked(itemId: String) {
+                    vm.setEvent(EventUi.OnItemCheckedChange(itemId))
                 }
             }
         )
@@ -141,14 +141,14 @@ class MainFragment : Fragment() {
 
     private fun initRecyclerViewSwipes() {
         val swipeCallback = SwipeTodoItemCallback(
-            onSwipeLeft = { todoItem ->
+            onSwipeLeft = { itemId ->
                 vm.setEvent(
-                    EventUi.OnItemSwipeToDelete(todoItem)
+                    EventUi.OnItemSwipeToDelete(itemId)
                 )
             },
-            onSwipeRight = { todoItem ->
+            onSwipeRight = { itemId ->
                 vm.setEvent(
-                    EventUi.OnItemSwipeToCheck(todoItem)
+                    EventUi.OnItemSwipeToCheck(itemId)
                 )
             },
             applicationContext = requireActivity().baseContext

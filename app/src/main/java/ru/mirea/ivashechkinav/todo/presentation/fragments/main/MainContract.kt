@@ -5,10 +5,10 @@ import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 class MainContract {
     sealed class EventUi {
         data class OnVisibleChange(val isFilterCompleted: Boolean) : EventUi()
-        data class OnItemSelected(val todoItem: TodoItem) : EventUi()
-        data class OnItemCheckedChange(val todoItem: TodoItem) : EventUi()
-        data class OnItemSwipeToDelete(val todoItem: TodoItem) : EventUi()
-        data class OnItemSwipeToCheck(val todoItem: TodoItem) : EventUi()
+        data class OnItemSelected(val itemId: String) : EventUi()
+        data class OnItemCheckedChange(val itemId: String) : EventUi()
+        data class OnItemSwipeToDelete(val itemId: String) : EventUi()
+        data class OnItemSwipeToCheck(val itemId: String) : EventUi()
         object OnFloatingButtonClick : EventUi()
         object OnSnackBarPullRetryButtonClicked : EventUi()
     }

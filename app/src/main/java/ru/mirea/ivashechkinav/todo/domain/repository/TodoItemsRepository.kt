@@ -17,5 +17,7 @@ interface TodoItemsRepository {
 
     suspend fun getItemById(id: String): ResultData<TodoItem>
 
+    suspend fun toggleItemCheckedState(id: String, timestamp: Long): ResultData<Unit>
+
     suspend fun syncItems(): ResultData<Unit>
 }

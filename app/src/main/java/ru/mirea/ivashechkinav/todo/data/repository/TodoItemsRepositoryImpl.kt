@@ -5,6 +5,7 @@ import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
 import ru.mirea.ivashechkinav.todo.core.DuplicateItemException
+import ru.mirea.ivashechkinav.todo.core.LocalStorageException
 import ru.mirea.ivashechkinav.todo.core.NetworkException
 import ru.mirea.ivashechkinav.todo.core.OutOfSyncDataException
 import ru.mirea.ivashechkinav.todo.core.ServerSideException
@@ -84,6 +85,18 @@ class TodoItemsRepositoryImpl @Inject constructor(
                 return@withContext ResultData.Failure(TodoItemNotFoundException())
             } catch (e: Exception) {
                 return@withContext handleException(e)
+            }
+        }
+
+    override suspend fun toggleItemCheckedState(id: String, timestamp: Long): ResultData<Unit> =
+        withContext(Dispatchers.IO) {
+            return@withContext try {
+                todoDao.toggleItemCompleteState(itemId = id, timestamp = timestamp)
+                val item = todoDao.getById(id) ?: throw LocalStorageException()
+                todoApi.update(id = id, NWRequest(item.toNetworkItem()))
+                ResultData.Success(Unit)
+            } catch (e: Exception) {
+                handleException(e)
             }
         }
 
