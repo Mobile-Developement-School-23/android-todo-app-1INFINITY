@@ -127,7 +127,7 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    private suspend fun onTodoItemIdLoaded(event: EventUi.OnTodoItemIdLoaded) {
+    private suspend fun onTodoItemIdLoaded(event: EventUi.OnTodoItemIdLoaded) { // will it erase state in case of orientation change?
         val result = handler.retryWithAttempts { repository.getItemById(event.todoItemId) }
         if (result is ResultData.Success) {
             val todoItem = result.value ?: return

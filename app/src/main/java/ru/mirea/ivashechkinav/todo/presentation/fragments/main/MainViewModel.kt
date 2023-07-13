@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import retrofit2.HttpException
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
@@ -42,6 +43,7 @@ class MainViewModel @Inject constructor(
         Log.e("Coroutine", "Error: ", throwable)
         CoroutineScope(context).launch { handleException(throwable) }
     }
+    private val scope = viewModelScope + exceptionHandler
     private val handler = OperationRepeatHandler(
         syncAction = { repository.syncItems() }
     )
@@ -71,7 +73,7 @@ class MainViewModel @Inject constructor(
     }
 
     init {
-        viewModelScope.launch(exceptionHandler) {
+        scope.launch(exceptionHandler) {
             syncItems()
             networkChangeReceiver.stateFlow.collectLatest { isConnected ->
                 handleConnectChange(isConnected)
@@ -121,7 +123,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private suspend fun handleEvent(event: EventUi) {
+    private suspend fun handleEvent(event: EventUi) { // separate functions
         when (event) {
             is EventUi.OnVisibleChange -> {
                 viewModelScope.launch(exceptionHandler) {
@@ -141,7 +143,7 @@ class MainViewModel @Inject constructor(
                 viewModelScope.launch(exceptionHandler) {
                     val itemChecked = event.todoItem.copy(
                         isComplete = !event.todoItem.isComplete,
-                        changeTimestamp = System.currentTimeMillis() / 1000
+                        changeTimestamp = System.currentTimeMillis() / 1000 // TimeUnit.Seconds.fromMillis()
                     )
                     handler.retryWithAttempts { repository.updateItem(itemChecked) }
                 }
@@ -162,11 +164,7 @@ class MainViewModel @Inject constructor(
                     handler.retryWithAttempts { repository.deleteItemById(event.todoItem.id) }
                 }
             }
-
-            is EventUi.OnFloatingButtonClick -> {
-                setEffect { EffectUi.ToTaskFragmentCreate }
-            }
-
+            is EventUi.OnFloatingButtonClick -> setEffect { EffectUi.ToTaskFragmentCreate }
             is EventUi.OnSnackBarPullRetryButtonClicked -> syncItems()
         }
     }

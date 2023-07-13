@@ -23,7 +23,7 @@ data class NWTodoItem(
     val lastUpdatedBy: String
 )
 
-fun TodoItem.toNetworkItem(): NWTodoItem {
+fun TodoItem.toNetworkItem(): NWTodoItem { // good place
     return NWTodoItem(
         id = id,
         text = text,
@@ -37,7 +37,7 @@ fun TodoItem.toNetworkItem(): NWTodoItem {
     )
 }
 
-fun NWTodoItem.toTodoItem(): TodoItem {
+fun NWTodoItem.toTodoItem(): TodoItem { // good place
     return TodoItem(
         id = id,
         text = text,

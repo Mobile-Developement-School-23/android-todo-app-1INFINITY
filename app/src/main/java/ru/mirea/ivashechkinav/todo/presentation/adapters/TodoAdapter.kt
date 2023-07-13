@@ -15,21 +15,12 @@ import ru.mirea.ivashechkinav.todo.di.components.ActivityScope
 import ru.mirea.ivashechkinav.todo.di.components.AppContext
 
 class TodoAdapter @AssistedInject constructor(
-    @Assisted private val listener: Listener,
+    @Assisted private val listener: Listener, // why not viewmodel?
     @AppContext private val applicationContext: Context
-) : ListAdapter<TodoItem, TodoItemViewHolder>(DiffCallback()), View.OnClickListener {
+) : ListAdapter<TodoItem, TodoItemViewHolder>(DiffCallback()) { // View.OnClickListener on main class is bad practice
     interface Listener {
         fun onItemClicked(todoItem: TodoItem)
         fun onItemChecked(todoItem: TodoItem)
-    }
-
-    override fun onClick(v: View) {
-        val itemPos = v.tag as Int
-        val todoItem = this.getItem(itemPos)
-        when (v.id) {
-            R.id.cbIsComplete ->  listener.onItemChecked(todoItem)
-            else -> listener.onItemClicked(todoItem)
-        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TodoItemViewHolder {
@@ -40,10 +31,8 @@ class TodoAdapter @AssistedInject constructor(
                 parent,
                 false
             ),
-            applicationContext
+            parent.context
         )
-        vh.root.setOnClickListener(this)
-        vh.isCompleteCheckBox.setOnClickListener(this)
         return vh
     }
 
@@ -52,9 +41,9 @@ class TodoAdapter @AssistedInject constructor(
     override fun onBindViewHolder(holder: TodoItemViewHolder, position: Int) {
         val item = currentList[position]
         holder.apply {
-            setItemBackground(position)
+            setItemBackground(position) // not entirely correct, data changes will break it
             onBind(item)
-            root.tag = position
+            root.tag = position // bad practice
             isCompleteCheckBox.tag = position
         }
     }

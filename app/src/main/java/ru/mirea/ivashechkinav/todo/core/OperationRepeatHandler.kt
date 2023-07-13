@@ -4,7 +4,7 @@ import kotlinx.coroutines.delay
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import java.util.concurrent.atomic.AtomicInteger
 
-class OperationRepeatHandler(
+class OperationRepeatHandler( // why not in DI?
     val syncAction: suspend () -> ResultData<Unit>
 ) {
     private val repetitions = AtomicInteger(INITIAL_ATTEMPTS)

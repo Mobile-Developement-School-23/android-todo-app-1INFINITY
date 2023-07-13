@@ -29,14 +29,15 @@ class TodoItemsRepositoryImpl @Inject constructor(
     private val todoApi: TodoApi,
 ) : TodoItemsRepository {
 
+
     override suspend fun addItem(item: TodoItem): ResultData<Unit> =
-        withContext(Dispatchers.IO) {
+        withContext(Dispatchers.IO) { // withContext..try..catch..handleException repetition
             return@withContext try {
                 todoDao.save(item = item)
                 todoApi.add(NWRequest(item.toNetworkItem()))
                 ResultData.Success(Unit)
             } catch (e: Exception) {
-                handleException(e)
+                handleException(e) // looks like a scope
             }
         }
 
@@ -62,7 +63,7 @@ class TodoItemsRepositoryImpl @Inject constructor(
             }
         }
 
-    override suspend fun getTodoItemsFlowWith(isChecked: Boolean) =
+    override suspend fun getTodoItemsFlowWith(isChecked: Boolean) = // function name lies getTodoItemsFlowWith(isChecked=false) returns all
         withContext(Dispatchers.IO) {
             if (isChecked) {
                 return@withContext todoDao.getAllFlowUnchecked()
@@ -121,7 +122,7 @@ class TodoItemsRepositoryImpl @Inject constructor(
                             }
                         }
                 )
-            } else if (e.message?.let { it.contains("hostname") || it.contains("timeout") } == true) {
+            } else if (e.message?.let { it.contains("hostname") || it.contains("timeout") } == true) { // bad practice
                 ResultData.Failure(NetworkException())
             } else {
                 ResultData.Failure(e)

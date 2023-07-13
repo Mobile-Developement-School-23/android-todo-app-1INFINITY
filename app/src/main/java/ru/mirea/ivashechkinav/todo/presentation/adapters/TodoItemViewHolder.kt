@@ -12,10 +12,12 @@ import androidx.recyclerview.widget.RecyclerView
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainViewModel
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
-class TodoItemViewHolder(itemView: View, private val applicationContext: Context) :
+class TodoItemViewHolder(itemView: View, private val applicationContext: Context, val viewModel: MainViewModel) :
     RecyclerView.ViewHolder(itemView) {
     val root = itemView
     var todoItem: TodoItem? = null
@@ -26,7 +28,7 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
 
     fun onBind(todoItem: TodoItem) {
         this.todoItem = todoItem
-        todoText.text = todoItem.text
+        todoText.text = todoItem.text // why not in initState?
         initState()
     }
 
@@ -49,6 +51,9 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
     }
 
     private fun initCheckedState(item: TodoItem) {
+        isCompleteCheckBox.setOnClickListener {
+
+        }
         isCompleteCheckBox.isChecked = item.isComplete
         if (item.isComplete) {
             setCheckedCheckBoxState()
@@ -56,7 +61,7 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
         }
         todoText.setTextColor(
             ContextCompat.getColor(
-                applicationContext,
+                applicationContext, // bad practice
                 R.color.label_light_primary
             )
         )
@@ -101,7 +106,7 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
             else -> throw UnsupportedOperationException("Unknown Importance value: ${item.importance}")
         }
     }
-    fun setLowViewState(item: TodoItem) {
+    fun setLowViewState(item: TodoItem) { // private
         if (item.isComplete) {
             importanceIcon.visibility = View.GONE
             return

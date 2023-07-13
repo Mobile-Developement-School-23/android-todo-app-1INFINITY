@@ -8,9 +8,9 @@ import javax.inject.Inject
 
 class TextHelper @Inject constructor(@AppContext private val applicationContext: Context){
     fun getString(@StringRes resId: Int): String {
-        return applicationContext.getString(resId)
+        return applicationContext.getString(resId) // bad practice
     }
     fun getString(@PluralsRes resId: Int, quantity: Int, number: Int): String {
-        return applicationContext.resources.getQuantityString(resId, quantity, number)
+        return applicationContext.resources.getQuantityString(resId, quantity, number)  // bad practice
     }
 }

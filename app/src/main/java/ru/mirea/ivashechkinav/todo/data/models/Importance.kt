@@ -6,7 +6,7 @@ enum class Importance {
     HIGH
 }
 
-fun parseImportanceFromNetwork(text: String): Importance {
+fun parseImportanceFromNetwork(text: String): Importance { // companion object?
     return when (text) {
         "low" -> Importance.LOW
         "basic" -> Importance.COMMON
@@ -15,7 +15,7 @@ fun parseImportanceFromNetwork(text: String): Importance {
     }
 }
 
-fun Importance.toNetworkFormat(): String {
+fun Importance.toNetworkFormat(): String { // in network module
     return when (this) {
         Importance.LOW -> "low"
         Importance.COMMON -> "basic"

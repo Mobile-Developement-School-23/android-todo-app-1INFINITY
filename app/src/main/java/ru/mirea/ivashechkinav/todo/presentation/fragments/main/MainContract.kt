@@ -3,7 +3,7 @@ package ru.mirea.ivashechkinav.todo.presentation.fragments.main
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 
 class MainContract {
-    sealed class EventUi {
+    sealed class EventUi { // Why not public functions? ; nit: UiEvent
         data class OnVisibleChange(val isFilterCompleted: Boolean) : EventUi()
         data class OnItemSelected(val todoItem: TodoItem) : EventUi()
         data class OnItemCheckedChange(val todoItem: TodoItem) : EventUi()
@@ -21,7 +21,7 @@ class MainContract {
     }
 
     data class UiState(
-        val countOfCompletedText: String = "Загрузка выполненных задач...",
+        val countOfCompletedText: String = "Загрузка выполненных задач...", // bad
         val todoItems: List<TodoItem> = listOf(),
         val isFilterCompleted: Boolean = false
     )

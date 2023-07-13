@@ -25,7 +25,7 @@ import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.Effe
 import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.EventUi
 import javax.inject.Inject
 
-class MainFragment : Fragment() {
+class MainFragment : Fragment() { // code in fragment :(
 
     @Inject
     lateinit var viewModelFactory: ViewModelProvider.Factory
@@ -73,7 +73,7 @@ class MainFragment : Fragment() {
         }
     }
 
-    private fun handleEffect(effect: EffectUi) {
+    private fun handleEffect(effect: EffectUi) { // separate functions for each EffectUi type
         when (effect) {
             is EffectUi.ShowSnackbar -> Snackbar.make(
                 binding.root,
