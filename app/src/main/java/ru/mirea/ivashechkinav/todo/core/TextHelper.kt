@@ -4,8 +4,11 @@ import android.content.Context
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
 import ru.mirea.ivashechkinav.todo.di.components.AppContext
+import ru.mirea.ivashechkinav.todo.di.components.AppScope
 import javax.inject.Inject
 
+@AppScope
+//TODO: Delete this class
 class TextHelper @Inject constructor(@AppContext private val applicationContext: Context){
     fun getString(@StringRes resId: Int): String {
         return applicationContext.getString(resId)

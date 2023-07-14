@@ -12,9 +12,9 @@ data class NWTodoItem(
     val id: String,
     val text: String,
     val importance: String,
-    val deadline: Long?,
+    val deadline: Long? = null,
     val done: Boolean,
-    val color: String?,
+    val color: String? = null,
     @SerialName("created_at")
     val createdAt: Long,
     @SerialName("changed_at")
@@ -30,7 +30,6 @@ fun TodoItem.toNetworkItem(): NWTodoItem {
         importance = importance.toNetworkFormat(),
         deadline = deadlineTimestamp,
         done = isComplete,
-        color = null,
         createdAt = creationTimestamp,
         changedAt = changeTimestamp,
         lastUpdatedBy = "cd567"

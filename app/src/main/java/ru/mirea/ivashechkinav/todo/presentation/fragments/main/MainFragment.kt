@@ -16,7 +16,6 @@ import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.R
-import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.databinding.FragmentMainBinding
 import ru.mirea.ivashechkinav.todo.presentation.MainActivity
 import ru.mirea.ivashechkinav.todo.presentation.adapters.SwipeTodoItemCallback
@@ -35,8 +34,7 @@ class MainFragment : Fragment() {
     lateinit var todoAdapterFactory: TodoAdapter.TodoAdapterFactory
     private lateinit var todoAdapter: TodoAdapter
 
-    private var _binding: FragmentMainBinding? = null
-    private val binding get() = _binding!!
+    private lateinit var  binding : FragmentMainBinding
 
     private lateinit var todoRecyclerView: RecyclerView
 
@@ -44,7 +42,7 @@ class MainFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentMainBinding.inflate(inflater, container, false)
+        binding = FragmentMainBinding.inflate(inflater, container, false)
         (requireActivity() as MainActivity)
             .activityComponent
             .mainFragmentComponentFactory()
@@ -157,8 +155,4 @@ class MainFragment : Fragment() {
         itemTouchHelper.attachToRecyclerView(binding.rwTodoList)
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
 }

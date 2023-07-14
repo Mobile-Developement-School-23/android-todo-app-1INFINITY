@@ -1,11 +1,15 @@
 package ru.mirea.ivashechkinav.todo.core
 
 import kotlinx.coroutines.delay
+import ru.mirea.ivashechkinav.todo.di.components.AppScope
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
+import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 import java.util.concurrent.atomic.AtomicInteger
+import javax.inject.Inject
 
-class OperationRepeatHandler(
-    val syncAction: suspend () -> ResultData<Unit>
+@AppScope
+class OperationRepeatHandler @Inject constructor(
+    val repository: TodoItemsRepository
 ) {
     private val repetitions = AtomicInteger(INITIAL_ATTEMPTS)
 
@@ -16,7 +20,7 @@ class OperationRepeatHandler(
         while (repetitions.get() < maxAttempts) {
             val result = block()
             if (result is ResultData.Failure && exceptionsCatching.any { it.isInstance(result.exception) }) {
-                syncAction()
+                repository.syncItems()
             } else {
                 repetitions.set(INITIAL_ATTEMPTS)
                 return result

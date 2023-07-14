@@ -36,15 +36,14 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val repository: TodoItemsRepository,
     private val networkChangeReceiver: NetworkChangeReceiver,
-    private val textHelper: TextHelper
+    private val textHelper: TextHelper,
+    private val handler: OperationRepeatHandler,
 ) : ViewModel() {
     private val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
         Log.e("Coroutine", "Error: ", throwable)
         CoroutineScope(context).launch { handleException(throwable) }
     }
-    private val handler = OperationRepeatHandler(
-        syncAction = { repository.syncItems() }
-    )
+
     private val _event: MutableSharedFlow<EventUi> = MutableSharedFlow()
 
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState())
