@@ -1,4 +1,4 @@
-package ru.mirea.ivashechkinav.todo.data.retrofit
+package ru.mirea.ivashechkinav.todo.data.retrofit.models
 
 @kotlinx.serialization.Serializable
 data class NWRequestList(

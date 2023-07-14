@@ -1,41 +1,30 @@
 package ru.mirea.ivashechkinav.todo.presentation.adapters
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.ListAdapter
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
+import ru.mirea.ivashechkinav.todo.di.components.ActivityScope
 
-class TodoAdapter(
-    private val listener: Listener,
-    private val applicationContext: Context
-) : RecyclerView.Adapter<TodoItemViewHolder>(), View.OnClickListener {
-
-    private val differ: AsyncListDiffer<TodoItem> = AsyncListDiffer(this, DiffCallback())
-
-    fun submitList(list: List<TodoItem>) = differ.submitList(list)
-
-    fun currentList(): List<TodoItem> = differ.currentList
-
-    fun getItemAtPosition(position: Int): TodoItem {
-        return currentList()[position]
-    }
-
+class TodoAdapter @AssistedInject constructor(
+    @Assisted private val listener: Listener,
+) : ListAdapter<TodoItem, TodoItemViewHolder>(DiffCallback()), View.OnClickListener {
     interface Listener {
-        fun onItemClicked(todoItem: TodoItem)
-        fun onItemChecked(todoItem: TodoItem)
+        fun onItemClicked(itemId: String)
+        fun onItemChecked(itemId: String)
     }
 
     override fun onClick(v: View) {
-        val itemPos = v.tag as Int
-        val todoItem = currentList()[itemPos]
+        val itemId = v.tag as String
         when (v.id) {
-            R.id.cbIsComplete ->  listener.onItemChecked(todoItem)
-            else -> listener.onItemClicked(todoItem)
+            R.id.cbIsComplete -> listener.onItemChecked(itemId)
+            else -> listener.onItemClicked(itemId)
         }
     }
 
@@ -47,34 +36,38 @@ class TodoAdapter(
                 parent,
                 false
             ),
-            applicationContext
+            parent.context
         )
         vh.root.setOnClickListener(this)
         vh.isCompleteCheckBox.setOnClickListener(this)
         return vh
     }
 
-    override fun getItemCount() = currentList().size
+    override fun getItemCount() = currentList.size
 
     override fun onBindViewHolder(holder: TodoItemViewHolder, position: Int) {
+        val item = currentList[position]
         holder.apply {
             setItemBackground(position)
-            onBind(currentList()[position])
-            root.tag = position
-            isCompleteCheckBox.tag = position
+            onBind(item)
+            root.tag = item.id
+            isCompleteCheckBox.tag = item.id
         }
     }
+
     private fun TodoItemViewHolder.setItemBackground(itemPosition: Int) {
-        val maxPosition = currentList().size - 1
-        when(itemPosition) {
+        val maxPosition = currentList.size - 1
+        when (itemPosition) {
             0 -> {
                 this.itemView.setBackgroundResource(R.drawable.todo_item_upper_background)
             }
+
             maxPosition -> {
                 this.itemView.setBackgroundResource(R.drawable.todo_item_lower_background)
             }
         }
     }
+
     private class DiffCallback : DiffUtil.ItemCallback<TodoItem>() {
         override fun areItemsTheSame(oldItem: TodoItem, newItem: TodoItem) =
             oldItem.id == newItem.id
@@ -83,4 +76,9 @@ class TodoAdapter(
             oldItem == newItem
     }
 
+    @ActivityScope
+    @AssistedFactory
+    interface TodoAdapterFactory {
+        fun create(listener: Listener): TodoAdapter
+    }
 }

@@ -8,8 +8,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import ru.mirea.ivashechkinav.todo.di.components.AppContext
+import ru.mirea.ivashechkinav.todo.di.components.AppScope
+import javax.inject.Inject
 
-class NetworkChangeReceiver(applicationContext: Context) {
+@AppScope
+class NetworkChangeReceiver @Inject constructor(@AppContext applicationContext: Context) {
 
     private val _networkStateFlow = MutableSharedFlow<Boolean>()
     val stateFlow = _networkStateFlow.asSharedFlow()

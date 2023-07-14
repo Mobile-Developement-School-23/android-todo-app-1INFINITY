@@ -51,69 +51,81 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
     private fun initCheckedState(item: TodoItem) {
         isCompleteCheckBox.isChecked = item.isComplete
         if (item.isComplete) {
-            todoText.paintFlags = todoText.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
-            todoText.setTextColor(
-                ContextCompat.getColor(
-                    applicationContext,
-                    R.color.label_light_tertiary
-                )
-            )
-
-            isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_checked)
-            isCompleteCheckBox.buttonTintList =
-                AppCompatResources.getColorStateList(applicationContext, R.color.color_light_green)
+            setCheckedCheckBoxState()
             return
         }
         todoText.setTextColor(
             ContextCompat.getColor(
                 applicationContext,
-                R.color.label_light_primary
+                R.color.label_primary
             )
         )
         todoText.paintFlags = todoText.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
         if (item.importance == Importance.HIGH) {
-            isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_unchecked_high)
-            isCompleteCheckBox.buttonTintList =
-                AppCompatResources.getColorStateList(applicationContext, R.color.color_light_red)
+            setImportantCheckBoxState()
         } else {
-            isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_unchecked_normal)
-            isCompleteCheckBox.buttonTintList = AppCompatResources.getColorStateList(
-                applicationContext,
-                R.color.support_light_separator
-            )
+            setCommonCheckBoxState()
         }
+    }
+    private fun setCheckedCheckBoxState() {
+        todoText.paintFlags = todoText.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
+        todoText.setTextColor(
+            ContextCompat.getColor(
+                applicationContext,
+                R.color.label_tertiary
+            )
+        )
+
+        isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_checked)
+        isCompleteCheckBox.buttonTintList =
+            AppCompatResources.getColorStateList(applicationContext, R.color.color_green)
+    }
+    private fun setImportantCheckBoxState() {
+        isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_unchecked_high)
+        isCompleteCheckBox.buttonTintList =
+            AppCompatResources.getColorStateList(applicationContext, R.color.color_red)
+    }
+    private fun setCommonCheckBoxState() {
+        isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_unchecked_normal)
+        isCompleteCheckBox.buttonTintList = AppCompatResources.getColorStateList(
+            applicationContext,
+            R.color.support_separator
+        )
     }
 
     private fun initImportanceState(item: TodoItem) {
         when (item.importance) {
-            Importance.LOW -> {
-                if (item.isComplete) {
-                    importanceIcon.visibility = View.GONE
-                    return
-                }
-                val drawable = AppCompatResources.getDrawable(
-                    applicationContext,
-                    R.drawable.ic_importance_low
-                )
-                importanceIcon.setImageDrawable(drawable)
-                importanceIcon.visibility = View.VISIBLE
-            }
-            Importance.COMMON -> {
-                importanceIcon.visibility = View.GONE
-            }
-            Importance.HIGH -> {
-                if (item.isComplete) {
-                    importanceIcon.visibility = View.GONE
-                    return
-                }
-                val drawable = AppCompatResources.getDrawable(
-                    applicationContext,
-                    R.drawable.ic_importance_high
-                )
-                importanceIcon.setImageDrawable(drawable)
-                importanceIcon.visibility = View.VISIBLE
-            }
+            Importance.LOW -> setLowViewState(item)
+            Importance.COMMON -> setCommonViewState(item)
+            Importance.HIGH -> setHighViewState(item)
             else -> throw UnsupportedOperationException("Unknown Importance value: ${item.importance}")
         }
+    }
+    fun setLowViewState(item: TodoItem) {
+        if (item.isComplete) {
+            importanceIcon.visibility = View.GONE
+            return
+        }
+        val drawable = AppCompatResources.getDrawable(
+            applicationContext,
+            R.drawable.ic_importance_low
+        )
+        importanceIcon.setImageDrawable(drawable)
+        importanceIcon.visibility = View.VISIBLE
+    }
+    fun setCommonViewState(item: TodoItem) {
+        importanceIcon.visibility = View.GONE
+    }
+    fun setHighViewState(item: TodoItem) {
+        if (item.isComplete) {
+            importanceIcon.visibility = View.GONE
+            return
+        }
+        val drawable = AppCompatResources.getDrawable(
+            applicationContext,
+            R.drawable.ic_importance_high
+        )
+        importanceIcon.setImageDrawable(drawable)
+        importanceIcon.visibility = View.VISIBLE
     }
 }
