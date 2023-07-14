@@ -1,90 +1,75 @@
 package ru.mirea.ivashechkinav.todo.presentation.fragments.task
 
 import android.app.DatePickerDialog
+import android.content.Context
 import android.os.Bundle
-import android.text.SpannableString
-import android.text.style.ForegroundColorSpan
 import android.view.LayoutInflater
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.PopupMenu
-import androidx.appcompat.content.res.AppCompatResources
-import androidx.core.content.ContextCompat
+import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.R
-import ru.mirea.ivashechkinav.todo.core.textChanges
-import ru.mirea.ivashechkinav.todo.data.models.Importance
-import ru.mirea.ivashechkinav.todo.databinding.FragmentTaskBinding
 import ru.mirea.ivashechkinav.todo.presentation.MainActivity
+import ru.mirea.ivashechkinav.todo.presentation.fragments.AppTheme
 import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.EffectUi
 import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.EventUi
-import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.FragmentViewState
-import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.UiState
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
 
-@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class TaskFragment : Fragment() {
 
     @Inject
     lateinit var viewModelFactory: ViewModelProvider.Factory
     private val vm: TaskViewModel by viewModels { viewModelFactory }
 
-    private var _binding: FragmentTaskBinding? = null
-    private val binding get() = _binding!!
-
     private val args: TaskFragmentArgs by navArgs()
-    private var popupMenu: PopupMenu? = null
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentTaskBinding.inflate(inflater, container, false)
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
         (requireActivity() as MainActivity)
             .activityComponent
             .taskFragmentComponentFactory()
             .create()
             .inject(this)
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        val root = inflater.inflate(R.layout.fragment_task, container, false).apply {
+            findViewById<ComposeView>(R.id.composeView).setContent {
+                val state = vm.uiState.collectAsStateWithLifecycle()
+                AppTheme {
+                    TaskFragmentComposable(
+                        state = state,
+                        viewModel = vm
+                    )
+                }
+            }
+        }
         loadArgs()
-        initEditTextObserve()
-        initButtons()
-        initPopUpMenu()
-        initDateBlock()
         initViewModelObservers()
-        return binding.root
+        return root
     }
 
     private fun initViewModelObservers() {
         lifecycleScope.launch {
-            vm.uiState.collectLatest { state ->
-                setDeadlineDate(state.deadlineTimestamp)
-                changeImportanceValue(state.importance)
-                changeDeleteBlockColor(state)
-
-                if (state.viewState == FragmentViewState.Loading)
-                    binding.edTodoItemText.setText(state.text)
-            }
-        }
-        lifecycleScope.launch {
             vm.effect.collect { effect ->
                 when (effect) {
                     is EffectUi.ShowSnackbar -> {
-                        Snackbar.make(binding.root, effect.message, Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(requireView(), effect.message, Snackbar.LENGTH_SHORT).show()
                     }
 
                     is EffectUi.ToBackFragment -> findNavController().popBackStack()
@@ -98,101 +83,6 @@ class TaskFragment : Fragment() {
         args.taskId?.let {
             vm.setEvent(
                 EventUi.OnTodoItemIdLoaded(it)
-            )
-        }
-    }
-
-    private fun initEditTextObserve() {
-        lifecycleScope.launch {
-            binding.edTodoItemText.textChanges().debounce(textDebounceDelay).collectLatest {
-                vm.setEvent(EventUi.OnTodoTextEdited(it.toString()))
-            }
-        }
-    }
-
-    private fun changeDeleteBlockColor(state: UiState) {
-        if (state.creationTimestamp != null || !state.text.isNullOrEmpty()) {
-            val redColor =
-                AppCompatResources.getColorStateList(requireContext(), R.color.color_red)
-            binding.imDelete.imageTintList = redColor
-            binding.tvDelete.setTextColor(redColor)
-        } else {
-            val disabledColor =
-                AppCompatResources.getColorStateList(requireContext(), R.color.label_disable)
-            binding.imDelete.imageTintList = disabledColor
-            binding.tvDelete.setTextColor(disabledColor)
-        }
-    }
-
-    private fun initButtons() {
-        binding.btnSave.setOnClickListener {
-            vm.setEvent(EventUi.OnSaveButtonClicked)
-        }
-        binding.imDelete.setOnClickListener {
-            vm.setEvent(EventUi.OnDeleteButtonClicked)
-        }
-        binding.imCancel.setOnClickListener { vm.setEvent(EventUi.OnBackButtonClicked) }
-    }
-
-    private fun initPopUpMenu() {
-        popupMenu = PopupMenu(requireContext(), binding.vPopupMenuAnchor)
-        val currentPopupMenu = popupMenu ?: return
-        currentPopupMenu.inflate(R.menu.popup_menu)
-        val highElement: MenuItem = currentPopupMenu.menu.getItem(2)
-        highElement.title = SpannableString(highElement.title).apply {
-            setSpan(
-                ForegroundColorSpan(
-                    ContextCompat.getColor(
-                        requireContext(),
-                        R.color.color_red
-                    )
-                ), 0, this.length, 0
-            )
-        }
-        binding.flImportanceMenu.setOnClickListener { currentPopupMenu.show() }
-        currentPopupMenu.setOnMenuItemClickListener(this::onMenuItemClick)
-    }
-
-    private fun onMenuItemClick(menuItem: MenuItem): Boolean {
-        val newImportance = when (menuItem.itemId) {
-            R.id.menu_item_none -> Importance.LOW
-            R.id.menu_item_low -> Importance.COMMON
-            R.id.menu_item_high -> Importance.HIGH
-            else -> Importance.LOW
-        }
-        vm.setEvent(
-            EventUi.OnImportanceSelected(newImportance)
-        )
-        return true
-    }
-
-    private fun changeImportanceValue(importance: Importance) {
-        val currentPopupMenu = popupMenu ?: return
-        when (importance) {
-            Importance.LOW -> {
-                binding.tvImportanceValue.text = currentPopupMenu.menu.getItem(0).title
-            }
-
-            Importance.COMMON -> {
-                binding.tvImportanceValue.text = currentPopupMenu.menu.getItem(1).title
-            }
-
-            Importance.HIGH -> {
-                binding.tvImportanceValue.text = currentPopupMenu.menu.getItem(2).title
-            }
-        }
-    }
-
-    private fun initDateBlock() {
-        binding.constrainLayoutDatePicker.setOnClickListener {
-            showDatePicker()
-        }
-
-        binding.swDeadline.setOnClickListener {
-            vm.setEvent(
-                EventUi.OnDeadlineSwitchChanged(
-                    binding.swDeadline.isChecked
-                )
             )
         }
     }
@@ -213,25 +103,5 @@ class TaskFragment : Fragment() {
         }, year, month, day)
 
         dpd.show()
-    }
-
-    private fun setDeadlineDate(timestamp: Long?) {
-        if (timestamp == null) {
-            binding.tvDeadlineDate.text = ""
-            binding.swDeadline.isChecked = false
-            return
-        }
-        binding.tvDeadlineDate.text = dateFormat.format(timestamp)
-        binding.swDeadline.isChecked = true
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
-    }
-
-    companion object {
-        const val textDebounceDelay = 300L
-        val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale.getDefault())
     }
 }
