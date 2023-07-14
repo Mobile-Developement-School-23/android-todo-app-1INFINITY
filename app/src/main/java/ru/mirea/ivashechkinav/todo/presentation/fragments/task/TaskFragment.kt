@@ -113,12 +113,12 @@ class TaskFragment : Fragment() {
     private fun changeDeleteBlockColor(state: UiState) {
         if (state.creationTimestamp != null || !state.text.isNullOrEmpty()) {
             val redColor =
-                AppCompatResources.getColorStateList(requireContext(), R.color.color_light_red)
+                AppCompatResources.getColorStateList(requireContext(), R.color.color_red)
             binding.imDelete.imageTintList = redColor
             binding.tvDelete.setTextColor(redColor)
         } else {
             val disabledColor =
-                AppCompatResources.getColorStateList(requireContext(), R.color.label_light_disable)
+                AppCompatResources.getColorStateList(requireContext(), R.color.label_disable)
             binding.imDelete.imageTintList = disabledColor
             binding.tvDelete.setTextColor(disabledColor)
         }
@@ -144,7 +144,7 @@ class TaskFragment : Fragment() {
                 ForegroundColorSpan(
                     ContextCompat.getColor(
                         requireContext(),
-                        R.color.color_light_red
+                        R.color.color_red
                     )
                 ), 0, this.length, 0
             )

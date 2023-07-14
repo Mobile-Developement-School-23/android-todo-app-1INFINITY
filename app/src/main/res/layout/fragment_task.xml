@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/back_primary"
     android:paddingHorizontal="16dp"
     tools:context=".presentation.fragments.task.TaskFragment">
 
@@ -13,11 +14,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="49dp"
+        android:contentDescription="@string/close_add_return_to_main_screen"
         android:src="@drawable/ic_close"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:tint="@color/label_light_primary"
-        android:contentDescription="@string/close_add_return_to_main_screen" />
+        app:tint="@color/label_primary" />
 
     <TextView
         android:id="@+id/btnSave"
@@ -25,7 +26,7 @@
         android:layout_height="wrap_content"
         android:text="@string/save_string"
         android:textAllCaps="true"
-        android:textColor="@color/color_light_blue"
+        android:textColor="@color/color_blue"
         app:layout_constraintBottom_toBottomOf="@+id/imCancel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@+id/imCancel" />
@@ -35,6 +36,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
+        android:background="@drawable/rounded"
         android:padding="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -71,14 +73,14 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/importance_text"
-            android:textColor="@color/label_light_primary" />
+            android:textColor="@color/label_primary" />
 
         <TextView
             android:id="@+id/tvImportanceValue"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Нет"
-            android:textColor="@color/label_light_tertiary" />
+            android:textColor="@color/label_tertiary" />
     </LinearLayout>
 
     <View
@@ -86,7 +88,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginTop="16dp"
-        android:background="@color/support_light_separator"
+        android:background="@color/support_separator"
         app:layout_constraintTop_toBottomOf="@+id/flImportanceMenu"
         tools:layout_editor_absoluteX="16dp" />
 
@@ -112,7 +114,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
             android:text="@string/done_before"
-            android:textColor="@color/label_light_primary"
+            android:textColor="@color/label_primary"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -120,7 +122,7 @@
             android:id="@+id/tvDeadlineDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="@color/color_light_blue"
+            android:textColor="@color/color_blue"
             app:layout_constraintStart_toStartOf="@+id/tvDeadlineText"
             app:layout_constraintTop_toBottomOf="@+id/tvDeadlineText"
             tools:text="1 января 1970" />
@@ -131,7 +133,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginTop="40dp"
-        android:background="@color/support_light_separator"
+        android:background="@color/support_separator"
         app:layout_constraintTop_toBottomOf="@+id/constrainLayoutDatePicker"
         tools:layout_editor_absoluteX="16dp" />
 
@@ -140,11 +142,11 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="20dp"
+        android:contentDescription="@string/delete_image_button"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/view2"
         app:srcCompat="@drawable/ic_delete"
-        app:tint="@color/label_light_disable"
-        android:contentDescription="@string/delete_image_button" />
+        app:tint="@color/label_disable" />
 
     <TextView
         android:id="@+id/tvDelete"
@@ -152,7 +154,7 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="12dp"
         android:text="@string/delete_string"
-        android:textColor="@color/label_light_disable"
+        android:textColor="@color/label_disable"
         app:layout_constraintBottom_toBottomOf="@+id/imDelete"
         app:layout_constraintStart_toEndOf="@+id/imDelete"
         app:layout_constraintTop_toTopOf="@+id/imDelete" />

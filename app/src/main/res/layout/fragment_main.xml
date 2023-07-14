@@ -18,7 +18,7 @@
             android:layout_height="match_parent"
             app:expandedTitleMarginStart="58dp"
             app:expandedTitleMarginBottom="50dp"
-            android:background="@color/back_light_primary"
+            android:background="@color/back_primary"
             app:layout_scrollFlags="scroll|snap|exitUntilCollapsed"
             app:title="Мои дела">
 
@@ -59,7 +59,7 @@
                     android:layout_gravity="bottom|end"
                     android:layout_marginEnd="10dp"
                     android:button="@drawable/custom_checkbox_selector_visible"
-                    android:buttonTint="@color/color_light_blue"
+                    android:buttonTint="@color/color_blue"
                     android:checked="false"
                     android:contentDescription="@string/hide_visibility_image_button" />
             </FrameLayout>
@@ -78,14 +78,14 @@
         android:clickable="true"
         android:contentDescription="@string/create_new_task"
         android:src="@drawable/add"
-        app:backgroundTint="@color/color_light_blue"
-        app:tint="@color/color_light_white" />
+        app:backgroundTint="@color/color_blue"
+        app:tint="@color/color_white" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rwTodoList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/back_light_primary"
+        android:background="@color/back_primary"
         android:clipToPadding="false"
         android:paddingHorizontal="8dp"
         android:paddingBottom="12dp"

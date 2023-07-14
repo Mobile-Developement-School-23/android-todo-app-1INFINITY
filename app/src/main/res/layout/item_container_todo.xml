@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/back_light_secondary">
+    android:background="@color/back_secondary">
 
     <CheckBox
         android:id="@+id/cbIsComplete"
@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:maxLines="3"
-            android:textColor="@color/label_light_primary"
+            android:textColor="@color/label_primary"
             android:textSize="16sp"
             tools:text="@string/item_text" />
 
@@ -41,8 +41,8 @@
             android:id="@+id/tvDeadlineText"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="дата"
-            android:textColor="@android:color/tertiary_text_light"
+            android:text="@string/date_text"
+            android:textColor="@color/label_tertiary"
             android:textSize="14sp"
             android:visibility="gone"
             tools:visibility="visible" />
@@ -59,7 +59,7 @@
         android:src="@drawable/ic_info"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:tint="@android:color/tertiary_text_light" />
+        app:tint="@color/label_tertiary" />
 
     <ImageView
         android:id="@+id/imImportance"

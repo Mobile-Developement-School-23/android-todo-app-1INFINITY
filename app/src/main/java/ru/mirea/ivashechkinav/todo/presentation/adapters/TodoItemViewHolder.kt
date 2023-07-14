@@ -57,7 +57,7 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
         todoText.setTextColor(
             ContextCompat.getColor(
                 applicationContext,
-                R.color.label_light_primary
+                R.color.label_primary
             )
         )
         todoText.paintFlags = todoText.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
@@ -72,24 +72,24 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
         todoText.setTextColor(
             ContextCompat.getColor(
                 applicationContext,
-                R.color.label_light_tertiary
+                R.color.label_tertiary
             )
         )
 
         isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_checked)
         isCompleteCheckBox.buttonTintList =
-            AppCompatResources.getColorStateList(applicationContext, R.color.color_light_green)
+            AppCompatResources.getColorStateList(applicationContext, R.color.color_green)
     }
     private fun setImportantCheckBoxState() {
         isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_unchecked_high)
         isCompleteCheckBox.buttonTintList =
-            AppCompatResources.getColorStateList(applicationContext, R.color.color_light_red)
+            AppCompatResources.getColorStateList(applicationContext, R.color.color_red)
     }
     private fun setCommonCheckBoxState() {
         isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_unchecked_normal)
         isCompleteCheckBox.buttonTintList = AppCompatResources.getColorStateList(
             applicationContext,
-            R.color.support_light_separator
+            R.color.support_separator
         )
     }
 

@@ -5,13 +5,13 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Interceptor
 import okhttp3.Response
-import ru.mirea.ivashechkinav.todo.data.sharedprefs.RevisionRepository
+import ru.mirea.ivashechkinav.todo.data.sharedprefs.SharePrefsRevisionRepository
 import ru.mirea.ivashechkinav.todo.di.components.AppScope
 import javax.inject.Inject
 
 @AppScope
 class RevisionInterceptor @Inject constructor(
-    private val revisionRepo: RevisionRepository
+    private val revisionRepo: SharePrefsRevisionRepository
 ) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         var request = chain.request()

@@ -22,14 +22,14 @@ class SwipeTodoItemCallback(
 ) : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
 
     private val acceptSwipePaint = Paint().apply {
-        color = applicationContext.getColor(R.color.color_light_green)
+        color = applicationContext.getColor(R.color.color_green)
     }
     private val deleteSwipePaint = Paint().apply {
-        color = applicationContext.getColor(R.color.color_light_red)
+        color = applicationContext.getColor(R.color.color_red)
     }
     private val whitePaint = Paint().apply {
         colorFilter = PorterDuffColorFilter(
-            applicationContext.getColor(R.color.color_light_white),
+            applicationContext.getColor(R.color.color_white),
             PorterDuff.Mode.SRC_IN
         )
     }

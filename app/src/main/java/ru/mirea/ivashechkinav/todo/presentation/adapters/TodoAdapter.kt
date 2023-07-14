@@ -1,6 +1,5 @@
 package ru.mirea.ivashechkinav.todo.presentation.adapters
 
-import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -12,11 +11,9 @@ import dagger.assisted.AssistedInject
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.di.components.ActivityScope
-import ru.mirea.ivashechkinav.todo.di.components.AppContext
 
 class TodoAdapter @AssistedInject constructor(
     @Assisted private val listener: Listener,
-    @AppContext private val applicationContext: Context
 ) : ListAdapter<TodoItem, TodoItemViewHolder>(DiffCallback()), View.OnClickListener {
     interface Listener {
         fun onItemClicked(itemId: String)
@@ -39,7 +36,7 @@ class TodoAdapter @AssistedInject constructor(
                 parent,
                 false
             ),
-            applicationContext
+            parent.context
         )
         vh.root.setOnClickListener(this)
         vh.isCompleteCheckBox.setOnClickListener(this)
