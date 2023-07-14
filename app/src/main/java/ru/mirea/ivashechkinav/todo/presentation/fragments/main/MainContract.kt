@@ -11,6 +11,7 @@ class MainContract {
         data class OnItemSwipeToCheck(val itemId: String) : EventUi()
         object OnFloatingButtonClick : EventUi()
         object OnSnackBarPullRetryButtonClicked : EventUi()
+        object OnSettingsButtonClick : EventUi()
     }
 
     sealed class EffectUi {
@@ -18,6 +19,7 @@ class MainContract {
         data class ToTaskFragmentUpdate(val todoItemId: String) : EffectUi()
         object ToTaskFragmentCreate : EffectUi()
         object ShowSnackbarWithPullRetry : EffectUi()
+        object ToSettingsFragment : EffectUi()
     }
 
     data class UiState(

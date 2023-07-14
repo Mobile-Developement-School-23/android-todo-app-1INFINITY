@@ -115,7 +115,8 @@ fun TaskFragmentComposable(
     }
 }
 
-@Preview
+@Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_NO)
+@Preview(uiMode = android.content.res.Configuration.UI_MODE_NIGHT_YES)
 @Composable
 fun TaskFragmentPreview() {
     val state = remember {

@@ -12,6 +12,7 @@ annotation class ActivityScope
 interface ActivityComponent {
     fun mainFragmentComponentFactory(): MainFragmentComponent.Factory
     fun taskFragmentComponentFactory(): TaskFragmentComponent.Factory
+    fun settingsFragmentComponentFactory(): SettingsFragmentComponent.Factory
 
     fun inject(mainActivity: MainActivity)
 

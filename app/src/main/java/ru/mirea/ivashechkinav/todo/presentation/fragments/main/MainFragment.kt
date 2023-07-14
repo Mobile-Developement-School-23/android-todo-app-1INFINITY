@@ -56,6 +56,11 @@ class MainFragment : Fragment() {
         initRecyclerViewSwipes()
         floatingButtonInit()
         initViewModelObservers()
+        binding.btnOpenSettings.setOnClickListener {
+            vm.setEvent(
+                EventUi.OnSettingsButtonClick
+            )
+        }
         return binding.root
     }
 
@@ -101,6 +106,11 @@ class MainFragment : Fragment() {
                     vm.setEvent(EventUi.OnSnackBarPullRetryButtonClicked)
                 }.show()
             }
+            is EffectUi.ToSettingsFragment -> {
+                findNavController().navigate(
+                    MainFragmentDirections.actionMainFragmentToSettingsFragment()
+                )
+            }
         }
     }
 
@@ -110,6 +120,7 @@ class MainFragment : Fragment() {
                 EventUi.OnVisibleChange(isFilterCompleted = isChecked)
             )
         }
+
     }
 
     private fun initRecyclerView() {

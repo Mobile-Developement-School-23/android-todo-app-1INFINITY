@@ -31,15 +31,12 @@ class MainActivity : AppCompatActivity() {
                 .appComponent
                 .activityComponentFactory()
                 .create()
-                .also { it.inject(this) }
-
+        activityComponent.inject(this)
         binding = ActivityMainBinding.inflate(layoutInflater)
 
         lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.CREATED) {
-                settingStorage.themeFlow.collect { theme ->
-                    theme?.let { AppCompatDelegate.setDefaultNightMode(it.value) }
-                }
+            settingStorage.themeFlow.collect { theme ->
+                theme?.let { AppCompatDelegate.setDefaultNightMode(it.value) }
             }
         }
         setContentView(binding.root)

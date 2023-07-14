@@ -35,19 +35,17 @@ class TaskFragment : Fragment() {
 
     private val args: TaskFragmentArgs by navArgs()
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+
         (requireActivity() as MainActivity)
             .activityComponent
             .taskFragmentComponentFactory()
             .create()
             .inject(this)
-    }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
         val root = inflater.inflate(R.layout.fragment_task, container, false).apply {
             findViewById<ComposeView>(R.id.composeView).setContent {
                 val state = vm.uiState.collectAsStateWithLifecycle()

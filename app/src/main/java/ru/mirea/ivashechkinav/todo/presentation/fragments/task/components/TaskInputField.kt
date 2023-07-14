@@ -48,7 +48,6 @@ fun TaskInputField(
                     modifier = Modifier
                         .padding(16.dp)
                         .fillMaxWidth()
-                        .border(1.dp, color = MaterialTheme.colors.separator)
                         .padding(
                             horizontal = 8.dp,
                             vertical = 8.dp

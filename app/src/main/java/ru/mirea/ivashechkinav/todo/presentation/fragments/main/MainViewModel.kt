@@ -173,6 +173,8 @@ class MainViewModel @Inject constructor(
             }
 
             is EventUi.OnSnackBarPullRetryButtonClicked -> syncItems()
+
+            is EventUi.OnSettingsButtonClick -> setEffect { EffectUi.ToSettingsFragment }
         }
     }
 
