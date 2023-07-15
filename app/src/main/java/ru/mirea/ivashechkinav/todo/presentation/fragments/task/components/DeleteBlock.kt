@@ -2,6 +2,8 @@ package ru.mirea.ivashechkinav.todo.presentation.fragments.task.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,12 +15,18 @@ import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.presentation.fragments.AppTheme
 import ru.mirea.ivashechkinav.todo.presentation.fragments.disabled
@@ -31,10 +39,20 @@ fun DeleteBlock(
 ) {
     Row(
         modifier = Modifier
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(16.dp),
+            .clickable(enabled = enabled, onClick = {
+                CoroutineScope(Dispatchers.Main).launch {
+                    delay(300L)
+                    onClick()
+                }
+                return@clickable
+            })
+            .padding(16.dp)
+            .indication(
+                indication = rememberRipple(bounded = false, radius = 32.dp ),
+                interactionSource = remember { MutableInteractionSource() }
+            ),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+        horizontalArrangement = Arrangement.Center,
     ) {
         val tint =
             if (enabled) MaterialTheme.colors.red

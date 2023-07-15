@@ -19,10 +19,16 @@
         </action>
         <action
             android:id="@+id/action_mainFragment_to_taskFragment_update"
-            app:destination="@id/taskFragment" />
+            app:destination="@id/taskFragment"
+            app:enterAnim="@anim/slide_right"
+            app:exitAnim="@anim/slide_left"
+            app:popExitAnim="@anim/slide_left"/>
         <action
             android:id="@+id/action_mainFragment_to_settingsFragment"
-            app:destination="@id/settingsFragment" />
+            app:destination="@id/settingsFragment"
+            app:enterAnim="@anim/slide_up"
+            app:exitAnim="@anim/slide_down"
+            app:popExitAnim="@anim/slide_down"/>
     </fragment>
     <fragment
         android:id="@+id/taskFragment"
