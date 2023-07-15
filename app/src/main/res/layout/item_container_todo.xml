@@ -34,8 +34,8 @@
             android:ellipsize="end"
             android:maxLines="3"
             android:textColor="@color/label_primary"
-            android:textSize="16sp"
-            tools:text="@string/item_text" />
+            tools:text="@string/item_text"
+            style="@style/Body"/>
 
         <TextView
             android:id="@+id/tvDeadlineText"
@@ -43,9 +43,9 @@
             android:layout_height="wrap_content"
             android:text="@string/date_text"
             android:textColor="@color/label_tertiary"
-            android:textSize="14sp"
             android:visibility="gone"
-            tools:visibility="visible" />
+            tools:visibility="visible"
+            style="@style/Button"/>
 
     </LinearLayout>
 

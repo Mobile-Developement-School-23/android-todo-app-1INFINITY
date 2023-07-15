@@ -38,7 +38,7 @@
                     android:gravity="center_vertical"
                     android:text="@string/done_count"
                     android:textColor="@android:color/tertiary_text_light"
-                    android:textSize="16sp" />
+                    style="@style/Body" />
 
 
             </FrameLayout>
@@ -74,7 +74,7 @@
                 android:layout_marginEnd="10dp"
                 android:background="#00FFFFFF"
                 android:src="@drawable/round_settings_24"
-                android:tint="@color/color_blue" />
+                app:tint="@color/color_blue" />
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
