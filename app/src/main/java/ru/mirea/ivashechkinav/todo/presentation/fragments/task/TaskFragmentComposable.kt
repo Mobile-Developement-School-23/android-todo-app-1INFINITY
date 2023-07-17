@@ -21,6 +21,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.presentation.fragments.AppTheme
@@ -55,8 +57,11 @@ fun TaskFragmentComposable(
             ),
             sheetContent = {
                 BottomSheetContent(
-                    importanceSelected = Importance.COMMON,
-                    onImportanceSelected = {viewModel?.setEvent(TaskContract.EventUi.OnImportanceSelected(it))})
+                    importanceSelected = state.value.importance,
+                    onImportanceSelected = {
+                        viewModel?.setEvent(TaskContract.EventUi.OnImportanceSelected(it))
+                        scope.launch { sheetState.hide() }
+                    })
             }
         ) {
             Column(

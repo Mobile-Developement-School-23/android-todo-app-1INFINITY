@@ -4,7 +4,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/back_primary"
-    android:paddingHorizontal="16dp"
     tools:context=".presentation.fragments.task.TaskFragment">
 
     <androidx.compose.ui.platform.ComposeView
