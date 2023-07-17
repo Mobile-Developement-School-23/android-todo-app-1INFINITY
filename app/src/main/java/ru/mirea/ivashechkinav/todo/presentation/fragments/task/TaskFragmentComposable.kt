@@ -21,8 +21,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.presentation.fragments.AppTheme
@@ -59,7 +57,7 @@ fun TaskFragmentComposable(
                 BottomSheetContent(
                     importanceSelected = state.value.importance,
                     onImportanceSelected = {
-                        viewModel?.setEvent(TaskContract.EventUi.OnImportanceSelected(it))
+                        viewModel?.setEvent(TaskContract.UiEvent.OnImportanceSelected(it))
                         scope.launch { sheetState.hide() }
                     })
             }
@@ -70,13 +68,13 @@ fun TaskFragmentComposable(
                     .background(MaterialTheme.colors.background)
             ) {
                 TaskTopBar(
-                    onCloseClick = { viewModel?.setEvent(TaskContract.EventUi.OnCancelButtonClicked) },
-                    onSaveClick = { viewModel?.setEvent(TaskContract.EventUi.OnSaveButtonClicked) },
+                    onCloseClick = { viewModel?.setEvent(TaskContract.UiEvent.OnCancelButtonClicked) },
+                    onSaveClick = { viewModel?.setEvent(TaskContract.UiEvent.OnSaveButtonClicked) },
                 )
 
                 TaskInputField(
                     text = state.value.text ?: "",
-                    onChanged = { viewModel?.setEvent(TaskContract.EventUi.OnTodoTextEdited(it)) },
+                    onChanged = { viewModel?.setEvent(TaskContract.UiEvent.OnTodoTextEdited(it)) },
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -95,14 +93,14 @@ fun TaskFragmentComposable(
                     },
                     clearDeadline = {
                         viewModel?.setEvent(
-                            TaskContract.EventUi.OnDeadlineSwitchChanged(
+                            TaskContract.UiEvent.OnDeadlineSwitchChanged(
                                 isChecked = false
                             )
                         )
                     },
                     showDatePicker = {
                         viewModel?.setEvent(
-                            TaskContract.EventUi.OnDeadlineSwitchChanged(
+                            TaskContract.UiEvent.OnDeadlineSwitchChanged(
                                 isChecked = true
                             )
                         )
@@ -113,7 +111,7 @@ fun TaskFragmentComposable(
 
                 DeleteBlock(
                     enabled = state.value.creationTimestamp != null || !state.value.text.isNullOrEmpty(),
-                    onClick = { viewModel?.setEvent((TaskContract.EventUi.OnDeleteButtonClicked)) },
+                    onClick = { viewModel?.setEvent((TaskContract.UiEvent.OnDeleteButtonClicked)) },
                 )
             }
         }

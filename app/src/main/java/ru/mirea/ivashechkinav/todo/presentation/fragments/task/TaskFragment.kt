@@ -1,12 +1,10 @@
 package ru.mirea.ivashechkinav.todo.presentation.fragments.task
 
 import android.app.DatePickerDialog
-import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.PopupMenu
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -20,11 +18,9 @@ import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.presentation.MainActivity
 import ru.mirea.ivashechkinav.todo.presentation.fragments.AppTheme
-import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.EffectUi
-import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.EventUi
-import java.text.SimpleDateFormat
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.UiEffect
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.UiEvent
 import java.util.Calendar
-import java.util.Locale
 import javax.inject.Inject
 
 class TaskFragment : Fragment() {
@@ -66,12 +62,12 @@ class TaskFragment : Fragment() {
         lifecycleScope.launch {
             vm.effect.collect { effect ->
                 when (effect) {
-                    is EffectUi.ShowSnackbar -> {
+                    is UiEffect.ShowSnackbar -> {
                         Snackbar.make(requireView(), effect.message, Snackbar.LENGTH_SHORT).show()
                     }
 
-                    is EffectUi.ToBackFragment -> findNavController().popBackStack()
-                    is EffectUi.ShowDatePicker -> showDatePicker()
+                    is UiEffect.ToBackFragment -> findNavController().popBackStack()
+                    is UiEffect.ShowDatePicker -> showDatePicker()
                 }
             }
         }
@@ -80,7 +76,7 @@ class TaskFragment : Fragment() {
     private fun loadArgs() {
         args.taskId?.let {
             vm.setEvent(
-                EventUi.OnTodoItemIdLoaded(it)
+                UiEvent.OnTodoItemIdLoaded(it)
             )
         }
     }
@@ -96,7 +92,7 @@ class TaskFragment : Fragment() {
             c.set(Calendar.DAY_OF_MONTH, dayOfMonth)
 
             vm.setEvent(
-                EventUi.OnDeadlineSelected(c.timeInMillis)
+                UiEvent.OnDeadlineSelected(c.timeInMillis)
             )
         }, year, month, day)
 

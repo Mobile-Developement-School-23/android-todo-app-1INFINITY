@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import retrofit2.HttpException
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
@@ -23,8 +24,8 @@ import ru.mirea.ivashechkinav.todo.core.TodoItemNotFoundException
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
-import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.EffectUi
-import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.EventUi
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.UiEffect
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.UiEvent
 import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.FragmentViewState
 import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.UiState
 import java.util.UUID
@@ -39,12 +40,13 @@ class TaskViewModel @Inject constructor(
         Log.e("Coroutine", "Error: ", throwable)
         CoroutineScope(context).launch { handleException(throwable) }
     }
-    private val _event: MutableSharedFlow<EventUi> = MutableSharedFlow()
+    private val scope = viewModelScope + exceptionHandler
+    private val _event: MutableSharedFlow<UiEvent> = MutableSharedFlow()
 
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState())
     val uiState = _uiState.asStateFlow()
 
-    private val _effect: Channel<EffectUi> = Channel()
+    private val _effect: Channel<UiEffect> = Channel()
     val effect = _effect.receiveAsFlow()
 
     private fun setState(reduce: UiState.() -> UiState) {
@@ -52,30 +54,30 @@ class TaskViewModel @Inject constructor(
         _uiState.value = newState
     }
 
-    fun setEvent(event: EventUi) = viewModelScope.launch { _event.emit(event) }
+    fun setEvent(event: UiEvent) = viewModelScope.launch { _event.emit(event) }
 
-    private fun setEffect(builder: () -> EffectUi) {
+    private fun setEffect(builder: () -> UiEffect) {
         val effectValue = builder()
         viewModelScope.launch { _effect.send(effectValue) }
     }
 
     init {
-        viewModelScope.launch(exceptionHandler) {
+        scope.launch {
             _event.collect { handleEvent(it) }
         }
     }
 
-    private suspend fun handleEvent(event: EventUi) {
+    private suspend fun handleEvent(event: UiEvent) {
         when (event) {
-            is EventUi.OnBackButtonClicked -> setEffect { EffectUi.ToBackFragment }
-            is EventUi.OnCancelButtonClicked -> setEffect { EffectUi.ToBackFragment }
-            is EventUi.OnSaveButtonClicked -> onSaveButtonClicked()
-            is EventUi.OnDeleteButtonClicked -> onDeleteButtonClicked()
-            is EventUi.OnTodoTextEdited -> onTodoTextEdited(event)
-            is EventUi.OnImportanceSelected -> onImportanceSelected(event)
-            is EventUi.OnDeadlineSelected -> onDeadlineSelected(event)
-            is EventUi.OnDeadlineSwitchChanged -> onDeadlineSwitchChanged(event)
-            is EventUi.OnTodoItemIdLoaded -> onTodoItemIdLoaded(event)
+            is UiEvent.OnBackButtonClicked -> setEffect { UiEffect.ToBackFragment }
+            is UiEvent.OnCancelButtonClicked -> setEffect { UiEffect.ToBackFragment }
+            is UiEvent.OnSaveButtonClicked -> onSaveButtonClicked()
+            is UiEvent.OnDeleteButtonClicked -> onDeleteButtonClicked()
+            is UiEvent.OnTodoTextEdited -> onTodoTextEdited(event)
+            is UiEvent.OnImportanceSelected -> onImportanceSelected(event)
+            is UiEvent.OnDeadlineSelected -> onDeadlineSelected(event)
+            is UiEvent.OnDeadlineSwitchChanged -> onDeadlineSwitchChanged(event)
+            is UiEvent.OnTodoItemIdLoaded -> onTodoItemIdLoaded(event)
         }
     }
 
@@ -87,7 +89,7 @@ class TaskViewModel @Inject constructor(
         } else {
             handler.retryWithAttempts { repository.updateItem(newItem) }
         }
-        setEffect { EffectUi.ToBackFragment }
+        setEffect { UiEffect.ToBackFragment }
     }
 
     private suspend fun onDeleteButtonClicked() {
@@ -95,10 +97,10 @@ class TaskViewModel @Inject constructor(
         currentTodoItem.id?.let {
             handler.retryWithAttempts { repository.deleteItemById(it) }
         }
-        setEffect { EffectUi.ToBackFragment }
+        setEffect { UiEffect.ToBackFragment }
     }
 
-    private fun onTodoTextEdited(event: EventUi.OnTodoTextEdited) {
+    private fun onTodoTextEdited(event: UiEvent.OnTodoTextEdited) {
         setState {
             copy(
                 text = event.editedText, viewState = FragmentViewState.Update
@@ -106,21 +108,21 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    private fun onImportanceSelected(event: EventUi.OnImportanceSelected) {
+    private fun onImportanceSelected(event: UiEvent.OnImportanceSelected) {
         setState {
             copy(importance = event.importance)
         }
     }
 
-    private fun onDeadlineSelected(event: EventUi.OnDeadlineSelected) {
+    private fun onDeadlineSelected(event: UiEvent.OnDeadlineSelected) {
         setState {
             copy(deadlineTimestamp = event.timestamp)
         }
     }
 
-    private fun onDeadlineSwitchChanged(event: EventUi.OnDeadlineSwitchChanged) {
+    private fun onDeadlineSwitchChanged(event: UiEvent.OnDeadlineSwitchChanged) {
         if (event.isChecked) {
-            setEffect { EffectUi.ShowDatePicker }
+            setEffect { UiEffect.ShowDatePicker }
             return
         }
         setState {
@@ -128,7 +130,10 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    private suspend fun onTodoItemIdLoaded(event: EventUi.OnTodoItemIdLoaded) {
+    private suspend fun onTodoItemIdLoaded(event: UiEvent.OnTodoItemIdLoaded) {
+        if(uiState.value.id == event.todoItemId)
+            return
+
         val result = handler.retryWithAttempts { repository.getItemById(event.todoItemId) }
         if (result is ResultData.Success) {
             val todoItem = result.value ?: return
@@ -157,14 +162,14 @@ class TaskViewModel @Inject constructor(
 
             else -> textHelper.getString(R.string.unknown_error_message)
         }
-        setEffect { EffectUi.ShowSnackbar(message = errorText) }
+        setEffect { UiEffect.ShowSnackbar(message = errorText) }
     }
 
     private fun validateSaveTask(): TodoItem? {
         val currentTime = System.currentTimeMillis() / SECONDS_DIVIDER
         val currentTodoItem = uiState.value
         if (currentTodoItem.text.isNullOrEmpty()) {
-            setEffect { EffectUi.ShowSnackbar(textHelper.getString(R.string.description_needed_message)) }
+            setEffect { UiEffect.ShowSnackbar(textHelper.getString(R.string.description_needed_message)) }
             return null
         }
         return TodoItem(

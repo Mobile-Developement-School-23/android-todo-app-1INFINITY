@@ -2,9 +2,9 @@ package ru.mirea.ivashechkinav.todo.data.retrofit.models
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import ru.mirea.ivashechkinav.todo.data.models.Importance
+import ru.mirea.ivashechkinav.todo.data.models.Importance.Companion.parseImportanceFromNetwork
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
-import ru.mirea.ivashechkinav.todo.data.models.parseImportanceFromNetwork
-import ru.mirea.ivashechkinav.todo.data.models.toNetworkFormat
 
 
 @Serializable
@@ -46,4 +46,13 @@ fun NWTodoItem.toTodoItem(): TodoItem {
         creationTimestamp = createdAt,
         changeTimestamp = changedAt
     )
+}
+
+fun Importance.toNetworkFormat(): String {
+    return when (this) {
+        Importance.LOW -> "low"
+        Importance.COMMON -> "basic"
+        Importance.HIGH -> "important"
+        else -> throw UnsupportedOperationException("Unknown Importance value: $this")
+    }
 }

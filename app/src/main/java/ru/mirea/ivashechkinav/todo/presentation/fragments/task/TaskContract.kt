@@ -3,16 +3,16 @@ package ru.mirea.ivashechkinav.todo.presentation.fragments.task
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 
 class TaskContract {
-    sealed class EventUi {
-        object OnCancelButtonClicked : EventUi()
-        object OnSaveButtonClicked : EventUi()
-        object OnDeleteButtonClicked : EventUi()
-        object OnBackButtonClicked : EventUi()
-        data class OnTodoTextEdited(val editedText: String) : EventUi()
-        data class OnImportanceSelected(val importance: Importance) : EventUi()
-        data class OnDeadlineSelected(val timestamp: Long) : EventUi()
-        data class OnDeadlineSwitchChanged(val isChecked: Boolean) : EventUi()
-        data class OnTodoItemIdLoaded(val todoItemId: String) : EventUi()
+    sealed class UiEvent {
+        object OnCancelButtonClicked : UiEvent()
+        object OnSaveButtonClicked : UiEvent()
+        object OnDeleteButtonClicked : UiEvent()
+        object OnBackButtonClicked : UiEvent()
+        data class OnTodoTextEdited(val editedText: String) : UiEvent()
+        data class OnImportanceSelected(val importance: Importance) : UiEvent()
+        data class OnDeadlineSelected(val timestamp: Long) : UiEvent()
+        data class OnDeadlineSwitchChanged(val isChecked: Boolean) : UiEvent()
+        data class OnTodoItemIdLoaded(val todoItemId: String) : UiEvent()
     }
 
     sealed class FragmentViewState {
@@ -20,10 +20,10 @@ class TaskContract {
         object Update : FragmentViewState()
     }
 
-    sealed class EffectUi {
-        data class ShowSnackbar(val message: String) : EffectUi()
-        object ToBackFragment : EffectUi()
-        object ShowDatePicker : EffectUi()
+    sealed class UiEffect {
+        data class ShowSnackbar(val message: String) : UiEffect()
+        object ToBackFragment : UiEffect()
+        object ShowDatePicker : UiEffect()
     }
 
     data class UiState(

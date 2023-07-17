@@ -4,8 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_YES
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.ViewModelProvider
@@ -22,8 +20,8 @@ import ru.mirea.ivashechkinav.todo.databinding.FragmentMainBinding
 import ru.mirea.ivashechkinav.todo.presentation.MainActivity
 import ru.mirea.ivashechkinav.todo.presentation.adapters.SwipeTodoItemCallback
 import ru.mirea.ivashechkinav.todo.presentation.adapters.TodoAdapter
-import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.EffectUi
-import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.EventUi
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.UiEffect
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.UiEvent
 import javax.inject.Inject
 
 class MainFragment : Fragment() {
@@ -58,7 +56,7 @@ class MainFragment : Fragment() {
         initViewModelObservers()
         binding.btnOpenSettings.setOnClickListener {
             vm.setEvent(
-                EventUi.OnSettingsButtonClick
+                UiEvent.OnSettingsButtonClick
             )
         }
         return binding.root
@@ -78,35 +76,35 @@ class MainFragment : Fragment() {
         }
     }
 
-    private fun handleEffect(effect: EffectUi) {
+    private fun handleEffect(effect: UiEffect) {
         when (effect) {
-            is EffectUi.ShowSnackbar -> Snackbar.make(
+            is UiEffect.ShowSnackbar -> Snackbar.make(
                 binding.root,
                 effect.message,
                 Snackbar.LENGTH_SHORT
             ).show()
 
-            is EffectUi.ToTaskFragmentUpdate -> {
+            is UiEffect.ToTaskFragmentUpdate -> {
                 val action =
                     MainFragmentDirections.actionMainFragmentToTaskFragmentCreate(taskId = effect.todoItemId)
                 findNavController().navigate(action)
             }
 
-            is EffectUi.ToTaskFragmentCreate -> {
+            is UiEffect.ToTaskFragmentCreate -> {
                 val action = MainFragmentDirections.actionMainFragmentToTaskFragmentCreate()
                 findNavController().navigate(action)
             }
 
-            is EffectUi.ShowSnackbarWithPullRetry -> {
+            is UiEffect.ShowSnackbarWithPullRetry -> {
                 Snackbar.make(
                     binding.root,
                     getString(R.string.loading_error_message),
                     Snackbar.LENGTH_LONG
                 ).setAction(getString(R.string.retry_action_text)) {
-                    vm.setEvent(EventUi.OnSnackBarPullRetryButtonClicked)
+                    vm.setEvent(UiEvent.OnSnackBarPullRetryButtonClicked)
                 }.show()
             }
-            is EffectUi.ToSettingsFragment -> {
+            is UiEffect.ToSettingsFragment -> {
                 findNavController().navigate(
                     MainFragmentDirections.actionMainFragmentToSettingsFragment()
                 )
@@ -117,7 +115,7 @@ class MainFragment : Fragment() {
     private fun initVisibleButton() {
         binding.cbVisible.setOnCheckedChangeListener { _, isChecked ->
             vm.setEvent(
-                EventUi.OnVisibleChange(isFilterCompleted = isChecked)
+                UiEvent.OnVisibleChange(isFilterCompleted = isChecked)
             )
         }
 
@@ -125,17 +123,7 @@ class MainFragment : Fragment() {
 
     private fun initRecyclerView() {
         todoRecyclerView = binding.rwTodoList
-        todoAdapter = todoAdapterFactory.create(
-            object : TodoAdapter.Listener {
-                override fun onItemClicked(itemId: String) {
-                    vm.setEvent(EventUi.OnItemSelected(itemId))
-                }
-
-                override fun onItemChecked(itemId: String) {
-                    vm.setEvent(EventUi.OnItemCheckedChange(itemId))
-                }
-            }
-        )
+        todoAdapter = todoAdapterFactory.create(vm)
         val layoutManager =
             LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
         todoRecyclerView.adapter = todoAdapter
@@ -145,7 +133,7 @@ class MainFragment : Fragment() {
     private fun floatingButtonInit() {
         binding.floatingActionButton.setOnClickListener {
             vm.setEvent(
-                EventUi.OnFloatingButtonClick
+                UiEvent.OnFloatingButtonClick
             )
         }
     }
@@ -154,12 +142,12 @@ class MainFragment : Fragment() {
         val swipeCallback = SwipeTodoItemCallback(
             onSwipeLeft = { itemId ->
                 vm.setEvent(
-                    EventUi.OnItemSwipeToDelete(itemId)
+                    UiEvent.OnItemSwipeToDelete(itemId)
                 )
             },
             onSwipeRight = { itemId ->
                 vm.setEvent(
-                    EventUi.OnItemSwipeToCheck(itemId)
+                    UiEvent.OnItemSwipeToCheck(itemId)
                 )
             },
             applicationContext = requireActivity().baseContext

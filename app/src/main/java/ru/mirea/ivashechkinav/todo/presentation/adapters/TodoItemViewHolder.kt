@@ -15,7 +15,7 @@ import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import java.text.SimpleDateFormat
 import java.util.*
 
-class TodoItemViewHolder(itemView: View, private val applicationContext: Context) :
+class TodoItemViewHolder(itemView: View, private val context: Context) :
     RecyclerView.ViewHolder(itemView) {
     val root = itemView
     var todoItem: TodoItem? = null
@@ -26,12 +26,12 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
 
     fun onBind(todoItem: TodoItem) {
         this.todoItem = todoItem
-        todoText.text = todoItem.text
         initState()
     }
 
     private fun initState() {
         val item = todoItem ?: return
+        todoText.text = item.text
         initCheckedState(item)
         initImportanceState(item)
         initDeadlineDate(item)
@@ -56,7 +56,7 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
         }
         todoText.setTextColor(
             ContextCompat.getColor(
-                applicationContext,
+                context,
                 R.color.label_primary
             )
         )
@@ -71,24 +71,24 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
         todoText.paintFlags = todoText.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
         todoText.setTextColor(
             ContextCompat.getColor(
-                applicationContext,
+                context,
                 R.color.label_tertiary
             )
         )
 
         isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_checked)
         isCompleteCheckBox.buttonTintList =
-            AppCompatResources.getColorStateList(applicationContext, R.color.color_green)
+            AppCompatResources.getColorStateList(context, R.color.color_green)
     }
     private fun setImportantCheckBoxState() {
         isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_unchecked_high)
         isCompleteCheckBox.buttonTintList =
-            AppCompatResources.getColorStateList(applicationContext, R.color.color_red)
+            AppCompatResources.getColorStateList(context, R.color.color_red)
     }
     private fun setCommonCheckBoxState() {
         isCompleteCheckBox.setButtonDrawable(R.drawable.checkbox_unchecked_normal)
         isCompleteCheckBox.buttonTintList = AppCompatResources.getColorStateList(
-            applicationContext,
+            context,
             R.color.support_separator
         )
     }
@@ -101,28 +101,28 @@ class TodoItemViewHolder(itemView: View, private val applicationContext: Context
             else -> throw UnsupportedOperationException("Unknown Importance value: ${item.importance}")
         }
     }
-    fun setLowViewState(item: TodoItem) {
+    private fun setLowViewState(item: TodoItem) {
         if (item.isComplete) {
             importanceIcon.visibility = View.GONE
             return
         }
         val drawable = AppCompatResources.getDrawable(
-            applicationContext,
+            context,
             R.drawable.ic_importance_low
         )
         importanceIcon.setImageDrawable(drawable)
         importanceIcon.visibility = View.VISIBLE
     }
-    fun setCommonViewState(item: TodoItem) {
+    private fun setCommonViewState(item: TodoItem) {
         importanceIcon.visibility = View.GONE
     }
-    fun setHighViewState(item: TodoItem) {
+    private fun setHighViewState(item: TodoItem) {
         if (item.isComplete) {
             importanceIcon.visibility = View.GONE
             return
         }
         val drawable = AppCompatResources.getDrawable(
-            applicationContext,
+            context,
             R.drawable.ic_importance_high
         )
         importanceIcon.setImageDrawable(drawable)

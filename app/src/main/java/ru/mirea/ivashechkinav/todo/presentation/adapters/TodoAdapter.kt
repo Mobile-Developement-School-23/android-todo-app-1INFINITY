@@ -1,7 +1,6 @@
 package ru.mirea.ivashechkinav.todo.presentation.adapters
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -11,26 +10,22 @@ import dagger.assisted.AssistedInject
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.di.components.ActivityScope
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainViewModel
 
 class TodoAdapter @AssistedInject constructor(
-    @Assisted private val listener: Listener,
-) : ListAdapter<TodoItem, TodoItemViewHolder>(DiffCallback()), View.OnClickListener {
-    interface Listener {
-        fun onItemClicked(itemId: String)
-        fun onItemChecked(itemId: String)
-    }
+    @Assisted private val viewModel: MainViewModel,
+) : ListAdapter<TodoItem, TodoItemViewHolder>(DiffCallback()) {
 
-    override fun onClick(v: View) {
-        val itemId = v.tag as String
-        when (v.id) {
-            R.id.cbIsComplete -> listener.onItemChecked(itemId)
-            else -> listener.onItemClicked(itemId)
-        }
-    }
+    private fun onCheckClicked(itemId: String) =
+        viewModel.setEvent(MainContract.UiEvent.OnItemCheckedChange(itemId))
+
+    private fun onRootClicked(itemId: String) =
+        viewModel.setEvent(MainContract.UiEvent.OnItemSelected(itemId))
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TodoItemViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)
-        val vh = TodoItemViewHolder(
+        return TodoItemViewHolder(
             layoutInflater.inflate(
                 R.layout.item_container_todo,
                 parent,
@@ -38,9 +33,6 @@ class TodoAdapter @AssistedInject constructor(
             ),
             parent.context
         )
-        vh.root.setOnClickListener(this)
-        vh.isCompleteCheckBox.setOnClickListener(this)
-        return vh
     }
 
     override fun getItemCount() = currentList.size
@@ -50,8 +42,8 @@ class TodoAdapter @AssistedInject constructor(
         holder.apply {
             setItemBackground(position)
             onBind(item)
-            root.tag = item.id
-            isCompleteCheckBox.tag = item.id
+            root.setOnClickListener { onRootClicked(item.id) }
+            isCompleteCheckBox.setOnClickListener { onCheckClicked(item.id) }
         }
     }
 
@@ -79,6 +71,6 @@ class TodoAdapter @AssistedInject constructor(
     @ActivityScope
     @AssistedFactory
     interface TodoAdapterFactory {
-        fun create(listener: Listener): TodoAdapter
+        fun create(viewModel: MainViewModel): TodoAdapter
     }
 }
