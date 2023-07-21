@@ -7,7 +7,6 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -28,7 +27,6 @@ import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
 import ru.mirea.ivashechkinav.todo.domain.repository.TodoItemsRepository
 import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.UiEffect
-import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.UiEvent
 import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.UiState
 import ru.mirea.ivashechkinav.todo.presentation.receiver.NetworkChangeReceiver
 import javax.inject.Inject
@@ -45,7 +43,6 @@ class MainViewModel @Inject constructor(
         CoroutineScope(context).launch { handleException(throwable) }
     }
     private val scope = viewModelScope + exceptionHandler
-    private val _event: MutableSharedFlow<UiEvent> = MutableSharedFlow()
 
     private val _uiState: MutableStateFlow<UiState> = MutableStateFlow(UiState())
     val uiState = _uiState.asStateFlow()
@@ -58,8 +55,6 @@ class MainViewModel @Inject constructor(
         _uiState.value = newState
     }
 
-    fun setEvent(event: UiEvent) = viewModelScope.launch { _event.emit(event) }
-
     private fun setEffect(builder: () -> UiEffect) {
         val effectValue = builder()
         viewModelScope.launch { _effect.send(effectValue) }
@@ -71,21 +66,18 @@ class MainViewModel @Inject constructor(
     }
 
     init {
-        scope.launch() {
+        scope.launch {
             syncItems()
             networkChangeReceiver.stateFlow.collectLatest { isConnected ->
                 handleConnectChange(isConnected)
             }
         }
-        scope.launch() {
+        scope.launch {
             itemsFlow.collect { handleItems(it) }
-        }
-        scope.launch() {
-            _event.collect { handleEvent(it) }
         }
     }
 
-    private suspend fun handleConnectChange(isConnected: Boolean) {
+    private fun handleConnectChange(isConnected: Boolean) {
         if (!isConnected) {
             setEffect { UiEffect.ShowSnackbar(textHelper.getString(R.string.connection_lost_message)) }
         } else {
@@ -121,70 +113,34 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private suspend fun handleEvent(event: UiEvent) {
-        when (event) {
-            is UiEvent.OnVisibleChange -> {
-                scope.launch() {
-                    visibleStateFlow.value = event.isFilterCompleted
-                    setState { copy(isFilterCompleted = event.isFilterCompleted) }
-                }
-            }
+    fun changeVisibilityState(isFilterCompleted: Boolean) = scope.launch {
+        visibleStateFlow.value = isFilterCompleted
+        setState { copy(isFilterCompleted = isFilterCompleted) }
+    }
 
-            is UiEvent.OnItemSelected -> {
-                scope.launch() {
-                    val itemId = event.itemId
-                    setEffect { UiEffect.ToTaskFragmentUpdate(itemId) }
-                }
-            }
+    fun selectItem(itemId: String) = scope.launch {
+        setEffect { UiEffect.ToTaskFragmentUpdate(itemId) }
+    }
 
-            is UiEvent.OnItemSwipeToCheck -> {
-                scope.launch() {
-                    val itemId = event.itemId
-                    val currentTimestamp = System.currentTimeMillis() / 1000
-                    handler.retryWithAttempts {
-                        repository.toggleItemCheckedState(
-                            itemId,
-                            currentTimestamp
-                        )
-                    }
-                }
-            }
-
-            is UiEvent.OnItemCheckedChange -> {
-                scope.launch() {
-                    val itemId = event.itemId
-                    val currentTimestamp = System.currentTimeMillis() / 1000
-                    handler.retryWithAttempts {
-                        repository.toggleItemCheckedState(
-                            itemId,
-                            currentTimestamp
-                        )
-                    }
-                }
-            }
-
-            is UiEvent.OnItemSwipeToDelete -> {
-                scope.launch() {
-                    handler.retryWithAttempts { repository.deleteItemById(event.itemId) }
-                }
-            }
-
-            is UiEvent.OnFloatingButtonClick -> {
-                setEffect { UiEffect.ToTaskFragmentCreate }
-            }
-
-            is UiEvent.OnSnackBarPullRetryButtonClicked -> syncItems()
-
-            is UiEvent.OnSettingsButtonClick -> setEffect { UiEffect.ToSettingsFragment }
+    fun toggleCheckItem(itemId: String) = scope.launch {
+        val currentTimestamp = System.currentTimeMillis() / 1000
+        handler.retryWithAttempts {
+            repository.toggleItemCheckedState(itemId, currentTimestamp)
         }
     }
 
-    private suspend fun syncItems() {
-        scope.launch() {
-            val syncResult = handler.retryWithAttempts { repository.syncItems() }
-            if (syncResult is ResultData.Failure) {
-                setEffect { UiEffect.ShowSnackbarWithPullRetry }
-            }
+    fun deleteItem(itemId: String) = scope.launch {
+        handler.retryWithAttempts { repository.deleteItemById(itemId) }
+    }
+
+    fun floatingButtonClick() = setEffect { UiEffect.ToTaskFragmentCreate }
+
+    fun settingsButtonClick() = setEffect { UiEffect.ToSettingsFragment }
+
+    fun syncItems() = scope.launch {
+        val syncResult = handler.retryWithAttempts { repository.syncItems() }
+        if (syncResult is ResultData.Failure) {
+            setEffect { UiEffect.ShowSnackbarWithPullRetry }
         }
     }
 

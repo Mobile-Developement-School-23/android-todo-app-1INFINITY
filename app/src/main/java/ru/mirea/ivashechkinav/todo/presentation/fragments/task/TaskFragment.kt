@@ -7,8 +7,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -19,7 +17,6 @@ import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.presentation.MainActivity
 import ru.mirea.ivashechkinav.todo.presentation.fragments.AppTheme
 import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.UiEffect
-import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskContract.UiEvent
 import java.util.Calendar
 import javax.inject.Inject
 
@@ -73,11 +70,7 @@ class TaskFragment : Fragment() {
     }
 
     private fun loadArgs() {
-        args.taskId?.let {
-            vm.setEvent(
-                UiEvent.OnTodoItemIdLoaded(it)
-            )
-        }
+        args.taskId?.let { vm.onTodoItemIdLoaded(it) }
     }
 
     private fun showDatePicker() {
@@ -90,9 +83,7 @@ class TaskFragment : Fragment() {
             c.set(Calendar.MONTH, monthOfYear)
             c.set(Calendar.DAY_OF_MONTH, dayOfMonth)
 
-            vm.setEvent(
-                UiEvent.OnDeadlineSelected(c.timeInMillis)
-            )
+            vm.onDeadlineSelected(c.timeInMillis)
         }, year, month, day)
 
         dpd.show()

@@ -19,7 +19,6 @@ import ru.mirea.ivashechkinav.todo.presentation.MainActivity
 import ru.mirea.ivashechkinav.todo.presentation.adapters.SwipeTodoItemCallback
 import ru.mirea.ivashechkinav.todo.presentation.adapters.TodoAdapter
 import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.UiEffect
-import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.UiEvent
 import javax.inject.Inject
 
 class MainFragment : Fragment() {
@@ -50,9 +49,7 @@ class MainFragment : Fragment() {
         floatingButtonInit()
         initViewModelObservers()
         binding.btnOpenSettings.setOnClickListener {
-            vm.setEvent(
-                UiEvent.OnSettingsButtonClick
-            )
+            vm.settingsButtonClick()
         }
         return binding.root
     }
@@ -96,7 +93,7 @@ class MainFragment : Fragment() {
                     getString(R.string.loading_error_message),
                     Snackbar.LENGTH_LONG
                 ).setAction(getString(R.string.retry_action_text)) {
-                    vm.setEvent(UiEvent.OnSnackBarPullRetryButtonClicked)
+                    vm.syncItems()
                 }.show()
             }
 
@@ -110,9 +107,7 @@ class MainFragment : Fragment() {
 
     private fun initVisibleButton() {
         binding.cbVisible.setOnCheckedChangeListener { _, isChecked ->
-            vm.setEvent(
-                UiEvent.OnVisibleChange(isFilterCompleted = isChecked)
-            )
+            vm.changeVisibilityState(isFilterCompleted = isChecked)
         }
 
     }
@@ -127,23 +122,17 @@ class MainFragment : Fragment() {
 
     private fun floatingButtonInit() {
         binding.floatingActionButton.setOnClickListener {
-            vm.setEvent(
-                UiEvent.OnFloatingButtonClick
-            )
+            vm.floatingButtonClick()
         }
     }
 
     private fun initRecyclerViewSwipes() {
         val swipeCallback = SwipeTodoItemCallback(
             onSwipeLeft = { itemId ->
-                vm.setEvent(
-                    UiEvent.OnItemSwipeToDelete(itemId)
-                )
+                vm.deleteItem(itemId)
             },
             onSwipeRight = { itemId ->
-                vm.setEvent(
-                    UiEvent.OnItemSwipeToCheck(itemId)
-                )
+                vm.toggleCheckItem(itemId)
             },
             applicationContext = requireActivity().baseContext
         )

@@ -4,13 +4,8 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
-import dagger.assisted.Assisted
-import dagger.assisted.AssistedFactory
-import dagger.assisted.AssistedInject
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
-import ru.mirea.ivashechkinav.todo.di.components.ActivityScope
-import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract
 import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainViewModel
 import javax.inject.Inject
 
@@ -19,10 +14,10 @@ class TodoAdapter @Inject constructor(
 ) : ListAdapter<TodoItem, TodoItemViewHolder>(DiffCallback()) {
 
     private fun onCheckClicked(itemId: String) =
-        viewModel.setEvent(MainContract.UiEvent.OnItemCheckedChange(itemId))
+        viewModel.toggleCheckItem(itemId)
 
     private fun onRootClicked(itemId: String) =
-        viewModel.setEvent(MainContract.UiEvent.OnItemSelected(itemId))
+        viewModel.selectItem(itemId)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TodoItemViewHolder {
         val layoutInflater = LayoutInflater.from(parent.context)

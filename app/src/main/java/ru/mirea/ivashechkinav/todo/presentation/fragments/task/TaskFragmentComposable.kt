@@ -57,7 +57,7 @@ fun TaskFragmentComposable(
                 BottomSheetContent(
                     importanceSelected = state.value.importance,
                     onImportanceSelected = {
-                        viewModel?.setEvent(TaskContract.UiEvent.OnImportanceSelected(it))
+                        viewModel?.importanceSelected(it)
                         scope.launch { sheetState.hide() }
                     })
             }
@@ -68,13 +68,13 @@ fun TaskFragmentComposable(
                     .background(MaterialTheme.colors.background)
             ) {
                 TaskTopBar(
-                    onCloseClick = { viewModel?.setEvent(TaskContract.UiEvent.OnCancelButtonClicked) },
-                    onSaveClick = { viewModel?.setEvent(TaskContract.UiEvent.OnSaveButtonClicked) },
+                    onCloseClick = { viewModel?.cancelButtonClicked() },
+                    onSaveClick = { viewModel?.saveButtonClicked() },
                 )
 
                 TaskInputField(
                     text = state.value.text ?: "",
-                    onChanged = { viewModel?.setEvent(TaskContract.UiEvent.OnTodoTextEdited(it)) },
+                    onChanged = { viewModel?.todoTextEdited(it) },
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -92,18 +92,10 @@ fun TaskFragmentComposable(
                             .let { it.atZone(ZoneId.systemDefault()).toLocalDate() }
                     },
                     clearDeadline = {
-                        viewModel?.setEvent(
-                            TaskContract.UiEvent.OnDeadlineSwitchChanged(
-                                isChecked = false
-                            )
-                        )
+                        viewModel?.deadlineSwitchChanged(isChecked = false)
                     },
                     showDatePicker = {
-                        viewModel?.setEvent(
-                            TaskContract.UiEvent.OnDeadlineSwitchChanged(
-                                isChecked = true
-                            )
-                        )
+                        viewModel?.deadlineSwitchChanged(isChecked = true)
                     },
                 )
 
@@ -111,7 +103,7 @@ fun TaskFragmentComposable(
 
                 DeleteBlock(
                     enabled = state.value.creationTimestamp != null || !state.value.text.isNullOrEmpty(),
-                    onClick = { viewModel?.setEvent((TaskContract.UiEvent.OnDeleteButtonClicked)) },
+                    onClick = { viewModel?.deleteButtonClicked() },
                 )
             }
         }
