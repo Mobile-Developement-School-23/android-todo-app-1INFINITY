@@ -1,6 +1,8 @@
 package ru.mirea.ivashechkinav.todo.di.components
 
+import dagger.BindsInstance
 import dagger.Subcomponent
+import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainFragment
 import ru.mirea.ivashechkinav.todo.presentation.fragments.settings.SettingsFragment
 import javax.inject.Scope
 
@@ -15,6 +17,6 @@ interface SettingsFragmentComponent {
 
     @Subcomponent.Factory
     interface Factory {
-        fun create(): SettingsFragmentComponent
+        fun create(@BindsInstance fragment: SettingsFragment): SettingsFragmentComponent
     }
 }

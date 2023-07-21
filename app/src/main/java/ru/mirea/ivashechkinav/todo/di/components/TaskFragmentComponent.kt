@@ -1,5 +1,6 @@
 package ru.mirea.ivashechkinav.todo.di.components
 
+import dagger.BindsInstance
 import dagger.Subcomponent
 import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainFragment
 import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskFragment
@@ -16,6 +17,6 @@ interface TaskFragmentComponent {
 
     @Subcomponent.Factory
     interface Factory {
-        fun create(): TaskFragmentComponent
+        fun create(@BindsInstance fragment: TaskFragment): TaskFragmentComponent
     }
 }

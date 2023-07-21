@@ -26,8 +26,7 @@ import javax.inject.Inject
 class TaskFragment : Fragment() {
 
     @Inject
-    lateinit var viewModelFactory: ViewModelProvider.Factory
-    private val vm: TaskViewModel by viewModels { viewModelFactory }
+    lateinit var vm: TaskViewModel
 
     private val args: TaskFragmentArgs by navArgs()
 
@@ -39,7 +38,7 @@ class TaskFragment : Fragment() {
         (requireActivity() as MainActivity)
             .activityComponent
             .taskFragmentComponentFactory()
-            .create()
+            .create(fragment = this@TaskFragment)
             .inject(this)
 
         val root = inflater.inflate(R.layout.fragment_task, container, false).apply {

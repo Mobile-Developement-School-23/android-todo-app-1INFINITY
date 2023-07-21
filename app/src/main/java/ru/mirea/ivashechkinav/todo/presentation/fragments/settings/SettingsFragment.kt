@@ -26,8 +26,7 @@ import javax.inject.Inject
 class SettingsFragment: Fragment() {
 
     @Inject
-    lateinit var viewModelFactory: ViewModelProvider.Factory
-    private val vm: SettingsViewModel by viewModels { viewModelFactory }
+    lateinit var vm: SettingsViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -37,7 +36,7 @@ class SettingsFragment: Fragment() {
         (requireActivity() as MainActivity)
             .activityComponent
             .settingsFragmentComponentFactory()
-            .create()
+            .create(fragment = this@SettingsFragment)
             .inject(this)
 
         val root = inflater.inflate(R.layout.fragment_settings, container, false).apply {

@@ -6,6 +6,7 @@ import dagger.BindsInstance
 import dagger.Component
 import ru.mirea.ivashechkinav.todo.App
 import ru.mirea.ivashechkinav.todo.di.modules.DataModule
+import ru.mirea.ivashechkinav.todo.di.modules.FragmentsModule
 import ru.mirea.ivashechkinav.todo.di.modules.ViewModelModule
 import ru.mirea.ivashechkinav.todo.presentation.notifications.AlarmReceiver
 import javax.inject.Qualifier

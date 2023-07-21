@@ -12,9 +12,10 @@ import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.di.components.ActivityScope
 import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract
 import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainViewModel
+import javax.inject.Inject
 
-class TodoAdapter @AssistedInject constructor(
-    @Assisted private val viewModel: MainViewModel,
+class TodoAdapter @Inject constructor(
+    private val viewModel: MainViewModel,
 ) : ListAdapter<TodoItem, TodoItemViewHolder>(DiffCallback()) {
 
     private fun onCheckClicked(itemId: String) =
@@ -68,9 +69,4 @@ class TodoAdapter @AssistedInject constructor(
             oldItem == newItem
     }
 
-    @ActivityScope
-    @AssistedFactory
-    interface TodoAdapterFactory {
-        fun create(viewModel: MainViewModel): TodoAdapter
-    }
 }
