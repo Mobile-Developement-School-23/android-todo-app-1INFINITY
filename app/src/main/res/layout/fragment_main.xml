@@ -73,6 +73,7 @@
                 android:layout_marginTop="16dp"
                 android:layout_marginEnd="10dp"
                 android:background="#00FFFFFF"
+                android:contentDescription="@string/settings_description"
                 android:src="@drawable/round_settings_24"
                 app:tint="@color/color_blue" />
         </com.google.android.material.appbar.CollapsingToolbarLayout>

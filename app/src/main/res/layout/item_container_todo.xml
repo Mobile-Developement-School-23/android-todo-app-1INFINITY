@@ -11,6 +11,7 @@
         android:layout_width="wrap_content"
         android:layout_height="48dp"
         android:button="@drawable/custom_checkbox_selector"
+        android:contentDescription="@string/mark_todo_item_description"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

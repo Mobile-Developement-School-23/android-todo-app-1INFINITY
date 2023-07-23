@@ -15,7 +15,10 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.mirea.ivashechkinav.todo.R
@@ -31,6 +34,8 @@ fun DeadlineBlock(
     clearDeadline: () -> Unit,
     showDatePicker: () -> Unit,
 ) {
+    val context = LocalContext.current
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -55,7 +60,11 @@ fun DeadlineBlock(
                 color = MaterialTheme.colors.tertiary,
             )
         }
-        Switch(checked = deadline != null, onCheckedChange = {
+        Switch(
+            modifier = Modifier
+                .semantics { contentDescription = context.getString(R.string.add_deadline_description) },
+            checked = deadline != null,
+            onCheckedChange = {
             if (it)
                 showDatePicker()
             else

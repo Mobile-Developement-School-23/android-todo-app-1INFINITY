@@ -15,7 +15,10 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.mirea.ivashechkinav.todo.R
@@ -26,6 +29,7 @@ fun TaskTopBar(
     onCloseClick: () -> Unit,
     onSaveClick: () -> Unit,
 ) {
+    val context = LocalContext.current
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -33,6 +37,7 @@ fun TaskTopBar(
     ) {
         Icon(
             modifier = Modifier
+                .semantics { contentDescription = context.getString(R.string.back_description) }
                 .clickable(onClick = onCloseClick)
                 .padding(16.dp),
             imageVector = Icons.Filled.Close,

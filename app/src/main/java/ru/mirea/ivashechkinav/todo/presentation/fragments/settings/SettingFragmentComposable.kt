@@ -22,8 +22,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.settings.UiTheme
 import ru.mirea.ivashechkinav.todo.presentation.fragments.AppTheme
 
@@ -32,15 +37,19 @@ fun SettingFragmentComposable(
     viewModel: SettingsViewModel?,
     state: State<UiTheme?>,
 ) {
+    val context = LocalContext.current
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.settings_text)) },
                 navigationIcon = {
                     IconButton(onClick = { viewModel?.navigateBack() }) {
-                        Icon(Icons.Default.Close, contentDescription = "Back")
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = context.getString(R.string.back_description)
+                        )
                     }
                 },
                 backgroundColor = MaterialTheme.colors.surface
@@ -53,7 +62,10 @@ fun SettingFragmentComposable(
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(text = "Выберите тему", style = MaterialTheme.typography.h2)
+                Text(
+                    text = stringResource(R.string.choose_theme_text),
+                    style = MaterialTheme.typography.h2
+                )
 
                 Row(
                     modifier = Modifier
@@ -67,6 +79,10 @@ fun SettingFragmentComposable(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         RadioButton(
+                            modifier = Modifier.semantics {
+                                contentDescription =
+                                    context.getString(R.string.choose_light_theme_description)
+                            },
                             selected = state.value == UiTheme.LIGHT,
                             onClick = { viewModel?.onThemeSelected(UiTheme.LIGHT) }
                         )
@@ -80,6 +96,10 @@ fun SettingFragmentComposable(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         RadioButton(
+                            modifier = Modifier.semantics {
+                                contentDescription =
+                                    context.getString(R.string.choose_system_theme_description)
+                            },
                             selected = state.value == UiTheme.SYSTEM,
                             onClick = { viewModel?.onThemeSelected(UiTheme.SYSTEM) }
                         )
@@ -93,6 +113,10 @@ fun SettingFragmentComposable(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         RadioButton(
+                            modifier = Modifier.semantics {
+                                contentDescription =
+                                    context.getString(R.string.choose_dark_theme_description)
+                            },
                             selected = state.value == UiTheme.DARK,
                             onClick = { viewModel?.onThemeSelected(UiTheme.DARK) }
                         )
