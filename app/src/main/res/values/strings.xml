@@ -24,6 +24,6 @@
     <string name="loading_error_message">Произошла ошибка при загрузке списка из интернета</string>
     <string name="retry_action_text">Повторить</string>
     <string name="connection_lost_message">Нет соединения с интернетом</string>
-    <string name="connection_established_message">Cоединение с интернетом появилось</string>
+    <string name="connection_restored_message">Cоединение с интернетом появилось</string>
     <string name="date_text">дата</string>
 </resources>

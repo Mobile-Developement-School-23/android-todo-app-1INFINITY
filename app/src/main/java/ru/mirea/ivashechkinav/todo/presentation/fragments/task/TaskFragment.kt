@@ -59,7 +59,11 @@ class TaskFragment : Fragment() {
             vm.effect.collect { effect ->
                 when (effect) {
                     is UiEffect.ShowSnackbar -> {
-                        Snackbar.make(requireView(), effect.message, Snackbar.LENGTH_SHORT).show()
+                        Snackbar.make(
+                            requireView(),
+                            parseSnackbarMessages(effect.message),
+                            Snackbar.LENGTH_SHORT
+                        ).show()
                     }
 
                     is UiEffect.ToBackFragment -> findNavController().popBackStack()
@@ -87,5 +91,15 @@ class TaskFragment : Fragment() {
         }, year, month, day)
 
         dpd.show()
+    }
+
+    private fun parseSnackbarMessages(message: TaskContract.SnackbarMessage): String {
+        val resId = when (message) {
+            TaskContract.SnackbarMessage.UnknownError -> R.string.unknown_error_message
+            TaskContract.SnackbarMessage.ServerError -> R.string.server_error_message
+            TaskContract.SnackbarMessage.ConnectionMissing -> R.string.connection_missing_message
+            TaskContract.SnackbarMessage.MissingText -> R.string.description_needed_message
+        }
+        return getString(resId)
     }
 }

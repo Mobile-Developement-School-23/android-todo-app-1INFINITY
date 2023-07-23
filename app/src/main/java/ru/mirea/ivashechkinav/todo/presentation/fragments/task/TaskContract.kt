@@ -9,7 +9,7 @@ class TaskContract {
     }
 
     sealed class UiEffect {
-        data class ShowSnackbar(val message: String) : UiEffect()
+        data class ShowSnackbar(val message: SnackbarMessage) : UiEffect()
         object ToBackFragment : UiEffect()
         object ShowDatePicker : UiEffect()
     }
@@ -23,4 +23,10 @@ class TaskContract {
         var creationTimestamp: Long? = null,
         val viewState: FragmentViewState = FragmentViewState.Loading
     )
+    enum class SnackbarMessage {
+        ConnectionMissing,
+        ServerError,
+        UnknownError,
+        MissingText
+    }
 }

@@ -12,13 +12,11 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import retrofit2.HttpException
-import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
 import ru.mirea.ivashechkinav.todo.core.DuplicateItemException
 import ru.mirea.ivashechkinav.todo.core.NetworkException
 import ru.mirea.ivashechkinav.todo.core.OperationRepeatHandler
 import ru.mirea.ivashechkinav.todo.core.ServerSideException
-import ru.mirea.ivashechkinav.todo.core.TextHelper
 import ru.mirea.ivashechkinav.todo.core.TodoItemNotFoundException
 import ru.mirea.ivashechkinav.todo.data.models.Importance
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
@@ -32,7 +30,6 @@ import javax.inject.Inject
 
 class TaskViewModel @Inject constructor(
     private val repository: TodoItemsRepository,
-    private val textHelper: TextHelper,
     private val handler: OperationRepeatHandler
 ) : ViewModel() {
     private val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
@@ -130,25 +127,23 @@ class TaskViewModel @Inject constructor(
     }
 
     private fun handleException(e: Throwable) {
-        val errorText = when (e) {
-            is HttpException, is NetworkException -> textHelper.getString(R.string.connection_missing_message)
+        val message = when (e) {
+            is HttpException, is NetworkException -> TaskContract.SnackbarMessage.ConnectionMissing
             is ServerSideException,
             is BadRequestException,
             is TodoItemNotFoundException,
-            is DuplicateItemException -> textHelper.getString(
-                R.string.server_error_message
-            )
+            is DuplicateItemException -> TaskContract.SnackbarMessage.ServerError
 
-            else -> textHelper.getString(R.string.unknown_error_message)
+            else -> TaskContract.SnackbarMessage.UnknownError
         }
-        setEffect { UiEffect.ShowSnackbar(message = errorText) }
+        setEffect { UiEffect.ShowSnackbar(message) }
     }
 
     private fun validateSaveTask(): TodoItem? {
         val currentTime = System.currentTimeMillis() / SECONDS_DIVIDER
         val currentTodoItem = uiState.value
         if (currentTodoItem.text.isNullOrEmpty()) {
-            setEffect { UiEffect.ShowSnackbar(textHelper.getString(R.string.description_needed_message)) }
+            setEffect { UiEffect.ShowSnackbar(TaskContract.SnackbarMessage.MissingText) }
             return null
         }
         return TodoItem(

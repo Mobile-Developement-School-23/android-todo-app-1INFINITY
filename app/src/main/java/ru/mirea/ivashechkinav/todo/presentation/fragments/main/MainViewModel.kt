@@ -15,13 +15,11 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.plus
 import retrofit2.HttpException
-import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
 import ru.mirea.ivashechkinav.todo.core.DuplicateItemException
 import ru.mirea.ivashechkinav.todo.core.NetworkException
 import ru.mirea.ivashechkinav.todo.core.OperationRepeatHandler
 import ru.mirea.ivashechkinav.todo.core.ServerSideException
-import ru.mirea.ivashechkinav.todo.core.TextHelper
 import ru.mirea.ivashechkinav.todo.core.TodoItemNotFoundException
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.domain.repository.ResultData
@@ -35,7 +33,6 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val repository: TodoItemsRepository,
     private val networkChangeReceiver: NetworkChangeReceiver,
-    private val textHelper: TextHelper,
     private val handler: OperationRepeatHandler,
 ) : ViewModel() {
     private val exceptionHandler = CoroutineExceptionHandler { context, throwable ->
@@ -79,43 +76,26 @@ class MainViewModel @Inject constructor(
 
     private fun handleConnectChange(isConnected: Boolean) {
         if (!isConnected) {
-            setEffect { UiEffect.ShowSnackbar(textHelper.getString(R.string.connection_lost_message)) }
+            setEffect { UiEffect.ShowSnackbar(MainContract.SnackbarMessage.ConnectionLost) }
         } else {
-            setEffect { UiEffect.ShowSnackbar(textHelper.getString(R.string.connection_established_message)) }
+            setEffect { UiEffect.ShowSnackbar(MainContract.SnackbarMessage.ConnectionRestored) }
             syncItems()
         }
     }
 
     private suspend fun handleItems(list: List<TodoItem>) {
         val count = repository.getCountOfCompletedItems()
-        if (uiState.value.isFilterCompleted) {
-            setState {
-                copy(
-                    countOfCompletedText = textHelper.getString(
-                        R.plurals.textCountHiddenItems,
-                        0,
-                        count
-                    ),
-                    todoItems = list.filter { !it.isComplete }
-                )
-            }
-        } else {
-            setState {
-                copy(
-                    countOfCompletedText = textHelper.getString(
-                        R.plurals.textCountCompletedItems,
-                        0,
-                        count
-                    ),
-                    todoItems = list
-                )
-            }
+        setState {
+            copy(
+                todoItems = list,
+                countOfCompleted = count
+            )
         }
     }
 
     fun changeVisibilityState(isFilterCompleted: Boolean) = scope.launch {
         visibleStateFlow.value = isFilterCompleted
-        setState { copy(isFilterCompleted = isFilterCompleted) }
+        setState { copy(isHiddenCompleted = isFilterCompleted) }
     }
 
     fun selectItem(itemId: String) = scope.launch {
@@ -147,15 +127,15 @@ class MainViewModel @Inject constructor(
     private fun handleException(e: Throwable) {
         val errorText =
             when (e) {
-                is HttpException, is NetworkException -> textHelper.getString(R.string.connection_missing_message)
+                is HttpException, is NetworkException -> MainContract.SnackbarMessage.ConnectionMissing
 
                 is ServerSideException,
                 is BadRequestException,
                 is TodoItemNotFoundException,
                 is DuplicateItemException
-                -> textHelper.getString(R.string.server_error_message)
+                -> MainContract.SnackbarMessage.ServerError
 
-                else -> textHelper.getString(R.string.unknown_error_message)
+                else -> MainContract.SnackbarMessage.UnknownError
             }
         setEffect { UiEffect.ShowSnackbar(message = errorText) }
     }

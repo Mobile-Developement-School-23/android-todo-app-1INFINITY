@@ -57,7 +57,14 @@ class MainFragment : Fragment() {
     private fun initViewModelObservers() {
         lifecycleScope.launch {
             vm.uiState.collectLatest { state ->
-                binding.tvCountDone.text = state.countOfCompletedText
+                val textId =
+                    if (state.isHiddenCompleted) R.plurals.textCountHiddenItems
+                    else R.plurals.textCountCompletedItems
+                binding.tvCountDone.text = resources.getQuantityString(
+                    textId,
+                    0,
+                    state.countOfCompleted
+                )
                 todoAdapter.submitList(state.todoItems)
             }
         }
@@ -72,7 +79,7 @@ class MainFragment : Fragment() {
         when (effect) {
             is UiEffect.ShowSnackbar -> Snackbar.make(
                 binding.root,
-                effect.message,
+                parseSnackbarMessages(effect.message),
                 Snackbar.LENGTH_SHORT
             ).show()
 
@@ -140,4 +147,14 @@ class MainFragment : Fragment() {
         itemTouchHelper.attachToRecyclerView(binding.rwTodoList)
     }
 
+    private fun parseSnackbarMessages(message: MainContract.SnackbarMessage): String {
+        val resId = when (message) {
+            MainContract.SnackbarMessage.ConnectionRestored -> R.string.connection_restored_message
+            MainContract.SnackbarMessage.ConnectionLost -> R.string.connection_lost_message
+            MainContract.SnackbarMessage.UnknownError -> R.string.unknown_error_message
+            MainContract.SnackbarMessage.ServerError -> R.string.server_error_message
+            MainContract.SnackbarMessage.ConnectionMissing -> R.string.connection_missing_message
+        }
+        return getString(resId)
+    }
 }
