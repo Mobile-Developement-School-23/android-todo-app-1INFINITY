@@ -22,7 +22,6 @@ class App : Application(), Configuration.Provider {
     lateinit var workerFactory: BackgroundWorkerFactory
 
     lateinit var appComponent: AppComponent
-        private set
 
     override fun onCreate() {
         super.onCreate()

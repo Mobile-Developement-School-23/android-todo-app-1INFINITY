@@ -14,14 +14,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.presentation.fragments.AppTheme
 import ru.mirea.ivashechkinav.todo.presentation.fragments.separator
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.components.TaskTags.INPUT_FIELD
 import ru.mirea.ivashechkinav.todo.presentation.fragments.tertiary
 
+object TaskTags {
+    const val INPUT_FIELD = "TASK_INPUT_FIELD"
+}
 @Composable
 fun TaskInputField(
     text: String,
@@ -37,6 +42,7 @@ fun TaskInputField(
     ) {
         BasicTextField(
             value = text,
+            modifier = Modifier.testTag(INPUT_FIELD),
             cursorBrush = SolidColor(MaterialTheme.colors.onSurface),
             textStyle = MaterialTheme.typography.body1.copy(
                 color = MaterialTheme.colors.onSurface

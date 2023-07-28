@@ -104,4 +104,8 @@ dependencies {
     implementation("androidx.compose.compiler:compiler:$composeCompilerVersion")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:$composeLifecycleVersion")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$composeLifecycleVersion")
+    // Test rules and transitive dependencies:
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
+    // Needed for createAndroidComposeRule, but not createComposeRule:
+    debugImplementation("androidx.compose.ui:ui-test-manifest:$composeVersion")
 }
