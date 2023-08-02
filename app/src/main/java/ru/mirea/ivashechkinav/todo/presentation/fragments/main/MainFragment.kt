@@ -16,6 +16,7 @@ import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.databinding.FragmentMainBinding
 import ru.mirea.ivashechkinav.todo.presentation.MainActivity
+import ru.mirea.ivashechkinav.todo.presentation.adapters.RoundedItemDecorator
 import ru.mirea.ivashechkinav.todo.presentation.adapters.SwipeTodoItemCallback
 import ru.mirea.ivashechkinav.todo.presentation.adapters.TodoAdapter
 import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainContract.UiEffect
@@ -125,6 +126,9 @@ class MainFragment : Fragment() {
             LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
         todoRecyclerView.adapter = todoAdapter
         todoRecyclerView.layoutManager = layoutManager
+        todoRecyclerView.addItemDecoration(
+            RoundedItemDecorator()
+        )
     }
 
     private fun floatingButtonInit() {

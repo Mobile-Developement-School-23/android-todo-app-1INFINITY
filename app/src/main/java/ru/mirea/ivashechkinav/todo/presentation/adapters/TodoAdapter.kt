@@ -36,23 +36,9 @@ class TodoAdapter @Inject constructor(
     override fun onBindViewHolder(holder: TodoItemViewHolder, position: Int) {
         val item = currentList[position]
         holder.apply {
-            setItemBackground(position)
             onBind(item)
             root.setOnClickListener { onRootClicked(item.id) }
             isCompleteCheckBox.setOnClickListener { onCheckClicked(item.id) }
-        }
-    }
-
-    private fun TodoItemViewHolder.setItemBackground(itemPosition: Int) {
-        val maxPosition = currentList.size - 1
-        when (itemPosition) {
-            0 -> {
-                this.itemView.setBackgroundResource(R.drawable.todo_item_upper_background)
-            }
-
-            maxPosition -> {
-                this.itemView.setBackgroundResource(R.drawable.todo_item_lower_background)
-            }
         }
     }
 
@@ -65,3 +51,4 @@ class TodoAdapter @Inject constructor(
     }
 
 }
+
