@@ -16,27 +16,27 @@ import kotlin.math.roundToInt
 
 
 class SwipeTodoItemCallback(
-    private val applicationContext: Context,
+    private val context: Context,
     private val onSwipeLeft: (itemId: String) -> Unit,
     private val onSwipeRight: (itemId: String) -> Unit
 ) : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
 
     private val acceptSwipePaint = Paint().apply {
-        color = applicationContext.getColor(R.color.color_green)
+        color = context.getColor(R.color.color_green)
     }
     private val deleteSwipePaint = Paint().apply {
-        color = applicationContext.getColor(R.color.color_red)
+        color = context.getColor(R.color.color_red)
     }
     private val whitePaint = Paint().apply {
         colorFilter = PorterDuffColorFilter(
-            applicationContext.getColor(R.color.color_white),
+            context.getColor(R.color.color_white),
             PorterDuff.Mode.SRC_IN
         )
     }
     private val acceptIcon =
-        AppCompatResources.getDrawable(applicationContext, R.drawable.ic_check)!!.toBitmap()
+        AppCompatResources.getDrawable(context, R.drawable.ic_check)!!.toBitmap()
     private val deleteIcon =
-        AppCompatResources.getDrawable(applicationContext, R.drawable.ic_delete)!!.toBitmap()
+        AppCompatResources.getDrawable(context, R.drawable.ic_delete)!!.toBitmap()
 
     override fun onMove(
         recyclerView: RecyclerView,
@@ -109,6 +109,6 @@ class SwipeTodoItemCallback(
     }
 
     private fun convertDpToPx(dp: Int): Int {
-        return (dp * (applicationContext.resources.displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT)).roundToInt()
+        return (dp * (context.resources.displayMetrics.xdpi / DisplayMetrics.DENSITY_DEFAULT)).roundToInt()
     }
 }

@@ -6,9 +6,11 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
+import ru.mirea.ivashechkinav.todo.di.components.ActivityScope
 import ru.mirea.ivashechkinav.todo.presentation.fragments.main.MainViewModel
 import javax.inject.Inject
 
+@ActivityScope
 class TodoAdapter @Inject constructor(
     private val viewModel: MainViewModel,
 ) : ListAdapter<TodoItem, TodoItemViewHolder>(DiffCallback()) {

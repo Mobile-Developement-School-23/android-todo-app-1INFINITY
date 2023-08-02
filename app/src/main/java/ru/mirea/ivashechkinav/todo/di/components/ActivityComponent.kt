@@ -1,5 +1,6 @@
 package ru.mirea.ivashechkinav.todo.di.components
 
+import dagger.BindsInstance
 import dagger.Subcomponent
 import ru.mirea.ivashechkinav.todo.presentation.MainActivity
 import javax.inject.Scope
@@ -18,6 +19,9 @@ interface ActivityComponent {
 
     @Subcomponent.Factory
     interface Factory {
-        fun create(): ActivityComponent
+        fun create(
+            @BindsInstance
+            activity: MainActivity
+        ): ActivityComponent
     }
 }

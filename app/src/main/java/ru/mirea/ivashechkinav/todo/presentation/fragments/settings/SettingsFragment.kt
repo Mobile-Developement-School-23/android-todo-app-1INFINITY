@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -13,12 +14,17 @@ import kotlinx.coroutines.launch
 import ru.mirea.ivashechkinav.todo.R
 import ru.mirea.ivashechkinav.todo.presentation.MainActivity
 import ru.mirea.ivashechkinav.todo.presentation.fragments.AppTheme
+import ru.mirea.ivashechkinav.todo.presentation.fragments.task.TaskViewModel
 import javax.inject.Inject
 
 class SettingsFragment : Fragment() {
 
     @Inject
-    lateinit var vm: SettingsViewModel
+    lateinit var factory: ViewModelProvider.Factory
+
+    private val vm: SettingsViewModel by lazy {
+        ViewModelProvider(this, factory)[SettingsViewModel::class.java]
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,

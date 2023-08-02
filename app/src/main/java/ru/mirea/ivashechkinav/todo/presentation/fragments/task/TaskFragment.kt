@@ -7,6 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -23,7 +25,11 @@ import javax.inject.Inject
 class TaskFragment : Fragment() {
 
     @Inject
-    lateinit var vm: TaskViewModel
+    lateinit var factory: ViewModelProvider.Factory
+
+    private val vm: TaskViewModel by lazy {
+        ViewModelProvider(this, factory)[TaskViewModel::class.java]
+    }
 
     private val args: TaskFragmentArgs by navArgs()
 

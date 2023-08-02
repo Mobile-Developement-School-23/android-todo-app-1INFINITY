@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
             (application as App)
                 .appComponent
                 .activityComponentFactory()
-                .create()
+                .create(this)
         activityComponent.inject(this)
         binding = ActivityMainBinding.inflate(layoutInflater)
 
