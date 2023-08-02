@@ -12,25 +12,24 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
 import ru.mirea.ivashechkinav.todo.R
-import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import kotlin.math.roundToInt
 
 
 class SwipeTodoItemCallback(
     private val applicationContext: Context,
-    private val onSwipeLeft: (todoItem: TodoItem) -> Unit,
-    private val onSwipeRight: (todoItem: TodoItem) -> Unit
+    private val onSwipeLeft: (itemId: String) -> Unit,
+    private val onSwipeRight: (itemId: String) -> Unit
 ) : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
 
     private val acceptSwipePaint = Paint().apply {
-        color = applicationContext.getColor(R.color.color_light_green)
+        color = applicationContext.getColor(R.color.color_green)
     }
     private val deleteSwipePaint = Paint().apply {
-        color = applicationContext.getColor(R.color.color_light_red)
+        color = applicationContext.getColor(R.color.color_red)
     }
     private val whitePaint = Paint().apply {
         colorFilter = PorterDuffColorFilter(
-            applicationContext.getColor(R.color.color_light_white),
+            applicationContext.getColor(R.color.color_white),
             PorterDuff.Mode.SRC_IN
         )
     }
@@ -48,14 +47,14 @@ class SwipeTodoItemCallback(
     }
 
     override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
-        val todoItem = (viewHolder as TodoItemViewHolder).todoItem ?: return
+        val itemId = (viewHolder as TodoItemViewHolder).todoItem?.id ?: return
         when (direction) {
             ItemTouchHelper.LEFT -> {
-                onSwipeLeft(todoItem)
+                onSwipeLeft(itemId)
             }
 
             ItemTouchHelper.RIGHT -> {
-                onSwipeRight(todoItem)
+                onSwipeRight(itemId)
             }
         }
     }

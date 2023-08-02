@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
+import java.sql.Timestamp
 
 
 @Dao
@@ -41,6 +42,9 @@ interface TodoDao {
 
     @Update
     suspend fun update(item: TodoItem)
+
+    @Query("UPDATE todoItems SET isComplete = NOT isComplete, changeTimestamp = :timestamp WHERE id = :itemId")
+    suspend fun toggleItemCompleteState(itemId: String, timestamp: Long)
 
     @Query("DELETE FROM todoItems WHERE id = :itemId")
     suspend fun deleteById(itemId: String)

@@ -11,11 +11,13 @@ interface TodoItemsRepository {
 
     suspend fun updateItem(item: TodoItem): ResultData<Unit>
 
-    suspend fun getTodoItemsFlowWith(isChecked: Boolean): Flow<List<TodoItem>>
+    suspend fun getTodoItemsByCheckedState(isChecked: Boolean): Flow<List<TodoItem>>
 
     suspend fun getCountOfCompletedItems(): Int
 
     suspend fun getItemById(id: String): ResultData<TodoItem>
+
+    suspend fun toggleItemCheckedState(id: String, timestamp: Long): ResultData<Unit>
 
     suspend fun syncItems(): ResultData<Unit>
 }

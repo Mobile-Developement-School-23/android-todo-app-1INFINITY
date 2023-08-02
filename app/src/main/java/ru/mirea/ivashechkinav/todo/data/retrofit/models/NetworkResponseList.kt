@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 
 @Serializable
-data class NWResponseList(
+data class NetworkResponseList(
     val status: String?,
     val list: List<NWTodoItem>,
     val revision: Int?

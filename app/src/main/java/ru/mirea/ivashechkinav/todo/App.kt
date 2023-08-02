@@ -1,6 +1,10 @@
 package ru.mirea.ivashechkinav.todo
 
 import android.app.Application
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.os.Build
 import androidx.work.Configuration
 import androidx.work.Constraints
 import androidx.work.NetworkType
@@ -25,6 +29,7 @@ class App : Application(), Configuration.Provider {
         appComponent = DaggerAppComponent.factory().create(appContext = this.applicationContext)
         appComponent.inject(this)
         scheduleWorker()
+        createChannel()
     }
 
     private fun scheduleWorker() {
@@ -38,6 +43,20 @@ class App : Application(), Configuration.Provider {
             )
         ).build()
         WorkManager.getInstance(this).enqueue(syncWorker)
+    }
+
+    private fun createChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationChannel =
+                NotificationChannel(
+                    "SuperTodoApplicationChannelId",
+                    "SuperTodoApplication",
+                    NotificationManager.IMPORTANCE_HIGH
+                )
+            val notificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.createNotificationChannel(notificationChannel)
+        }
     }
 
     override fun getWorkManagerConfiguration(): Configuration {

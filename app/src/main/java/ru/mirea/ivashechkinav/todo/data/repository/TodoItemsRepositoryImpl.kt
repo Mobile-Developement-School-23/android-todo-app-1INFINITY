@@ -5,6 +5,7 @@ import kotlinx.coroutines.withContext
 import retrofit2.HttpException
 import ru.mirea.ivashechkinav.todo.core.BadRequestException
 import ru.mirea.ivashechkinav.todo.core.DuplicateItemException
+import ru.mirea.ivashechkinav.todo.core.LocalStorageException
 import ru.mirea.ivashechkinav.todo.core.NetworkException
 import ru.mirea.ivashechkinav.todo.core.OutOfSyncDataException
 import ru.mirea.ivashechkinav.todo.core.ServerSideException
@@ -12,8 +13,8 @@ import ru.mirea.ivashechkinav.todo.core.TodoItemNotFoundException
 import ru.mirea.ivashechkinav.todo.core.UnauthorizedException
 import ru.mirea.ivashechkinav.todo.data.models.TodoItem
 import ru.mirea.ivashechkinav.todo.data.retrofit.TodoApi
-import ru.mirea.ivashechkinav.todo.data.retrofit.models.NWRequest
-import ru.mirea.ivashechkinav.todo.data.retrofit.models.NWRequestList
+import ru.mirea.ivashechkinav.todo.data.retrofit.models.NetworkRequest
+import ru.mirea.ivashechkinav.todo.data.retrofit.models.NetworkRequestList
 import ru.mirea.ivashechkinav.todo.data.retrofit.models.toNetworkItem
 import ru.mirea.ivashechkinav.todo.data.retrofit.models.toTodoItem
 import ru.mirea.ivashechkinav.todo.data.room.TodoDao
@@ -30,39 +31,27 @@ class TodoItemsRepositoryImpl @Inject constructor(
 ) : TodoItemsRepository {
 
     override suspend fun addItem(item: TodoItem): ResultData<Unit> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                todoDao.save(item = item)
-                todoApi.add(NWRequest(item.toNetworkItem()))
-                ResultData.Success(Unit)
-            } catch (e: Exception) {
-                handleException(e)
-            }
+        withIOContext {
+            todoDao.save(item = item)
+            todoApi.add(NetworkRequest(item.toNetworkItem()))
+            ResultData.Success(Unit)
         }
 
     override suspend fun deleteItemById(id: String): ResultData<Unit> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                todoDao.deleteById(itemId = id)
-                todoApi.delete(id = id)
-                ResultData.Success(Unit)
-            } catch (e: Exception) {
-                handleException(e)
-            }
+        withIOContext {
+            todoDao.deleteById(itemId = id)
+            todoApi.delete(id = id)
+            ResultData.Success(Unit)
         }
 
     override suspend fun updateItem(item: TodoItem): ResultData<Unit> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                todoDao.update(item = item)
-                todoApi.update(id = item.id, itemRequest = NWRequest(item.toNetworkItem()))
-                ResultData.Success(Unit)
-            } catch (e: Exception) {
-                handleException(e)
-            }
+        withIOContext {
+            todoDao.update(item = item)
+            todoApi.update(id = item.id, itemRequest = NetworkRequest(item.toNetworkItem()))
+            ResultData.Success(Unit)
         }
 
-    override suspend fun getTodoItemsFlowWith(isChecked: Boolean) =
+    override suspend fun getTodoItemsByCheckedState(isChecked: Boolean) =
         withContext(Dispatchers.IO) {
             if (isChecked) {
                 return@withContext todoDao.getAllFlowUnchecked()
@@ -76,30 +65,38 @@ class TodoItemsRepositoryImpl @Inject constructor(
         }
 
     override suspend fun getItemById(id: String): ResultData<TodoItem> =
-        withContext(Dispatchers.IO) {
-            try {
-                todoDao.getById(itemId = id)?.let {
-                    return@withContext ResultData.Success(it)
-                }
-                return@withContext ResultData.Failure(TodoItemNotFoundException())
-            } catch (e: Exception) {
-                return@withContext handleException(e)
+        withIOContext {
+            todoDao.getById(itemId = id)?.let {
+                return@withIOContext ResultData.Success(it)
             }
+            ResultData.Failure(TodoItemNotFoundException())
+        }
+
+    override suspend fun toggleItemCheckedState(id: String, timestamp: Long): ResultData<Unit> =
+        withIOContext {
+            todoDao.toggleItemCompleteState(itemId = id, timestamp = timestamp)
+            val item = todoDao.getById(id) ?: throw LocalStorageException()
+            todoApi.update(id = id, NetworkRequest(item.toNetworkItem()))
+            ResultData.Success(Unit)
         }
 
     override suspend fun syncItems(): ResultData<Unit> =
-        withContext(Dispatchers.IO) {
-            return@withContext try {
-                val serverList = todoApi.getAll().list.map { it.toTodoItem() }
-                serverList.forEach { todoDao.upsertItem(it) }
-                todoApi.patch(
-                    NWRequestList(todoDao.getAll().map { it.toNetworkItem() })
-                )
-                ResultData.Success(Unit)
+        withIOContext {
+            val serverList = todoApi.getAll().list.map { it.toTodoItem() }
+            serverList.forEach { todoDao.upsertItem(it) }
+            todoApi.patch(NetworkRequestList(todoDao.getAll().map { it.toNetworkItem() }))
+            ResultData.Success(Unit)
+        }
+
+    private suspend inline  fun <T> withIOContext(crossinline block: suspend () -> ResultData<T>): ResultData<T> {
+        return withContext(Dispatchers.IO) {
+            try {
+                return@withContext block()
             } catch (e: Exception) {
                 handleException(e)
             }
         }
+    }
 
     companion object {
         private fun handleException(e: Exception): ResultData.Failure {

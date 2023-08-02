@@ -8,6 +8,7 @@
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintTop_toTopOf="parent"
     tools:context=".presentation.fragments.main.MainFragment">
+
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appBarLayout"
         android:layout_width="match_parent"
@@ -18,7 +19,7 @@
             android:layout_height="match_parent"
             app:expandedTitleMarginStart="58dp"
             app:expandedTitleMarginBottom="50dp"
-            android:background="@color/back_light_primary"
+            android:background="@color/back_primary"
             app:layout_scrollFlags="scroll|snap|exitUntilCollapsed"
             app:title="Мои дела">
 
@@ -37,7 +38,7 @@
                     android:gravity="center_vertical"
                     android:text="@string/done_count"
                     android:textColor="@android:color/tertiary_text_light"
-                    android:textSize="16sp" />
+                    style="@style/Body" />
 
 
             </FrameLayout>
@@ -59,11 +60,22 @@
                     android:layout_gravity="bottom|end"
                     android:layout_marginEnd="10dp"
                     android:button="@drawable/custom_checkbox_selector_visible"
-                    android:buttonTint="@color/color_light_blue"
+                    android:buttonTint="@color/color_blue"
                     android:checked="false"
                     android:contentDescription="@string/hide_visibility_image_button" />
             </FrameLayout>
 
+            <ImageButton
+                android:id="@+id/btnOpenSettings"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="top|end"
+                android:layout_marginTop="16dp"
+                android:layout_marginEnd="10dp"
+                android:background="#00FFFFFF"
+                android:contentDescription="@string/settings_description"
+                android:src="@drawable/round_settings_24"
+                app:tint="@color/color_blue" />
         </com.google.android.material.appbar.CollapsingToolbarLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
@@ -78,14 +90,14 @@
         android:clickable="true"
         android:contentDescription="@string/create_new_task"
         android:src="@drawable/add"
-        app:backgroundTint="@color/color_light_blue"
-        app:tint="@color/color_light_white" />
+        app:backgroundTint="@color/color_blue"
+        app:tint="@color/color_white" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rwTodoList"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="@color/back_light_primary"
+        android:background="@color/back_primary"
         android:clipToPadding="false"
         android:paddingHorizontal="8dp"
         android:paddingBottom="12dp"

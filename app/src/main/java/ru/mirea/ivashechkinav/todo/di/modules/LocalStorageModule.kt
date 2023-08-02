@@ -1,14 +1,12 @@
 package ru.mirea.ivashechkinav.todo.di.modules
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.room.Room
-import dagger.Binds
 import dagger.Module
 import dagger.Provides
 import ru.mirea.ivashechkinav.todo.data.room.AppDatabase
 import ru.mirea.ivashechkinav.todo.data.room.TodoDao
-import ru.mirea.ivashechkinav.todo.data.sharedprefs.RevisionRepository
-import ru.mirea.ivashechkinav.todo.data.sharedprefs.SharePrefsRevisionRepositoryImpl
 import ru.mirea.ivashechkinav.todo.di.components.AppContext
 
 data class DatabaseConfig(val dbName: String)
@@ -16,10 +14,13 @@ data class DatabaseConfig(val dbName: String)
 @Module
 interface LocalStorageModule {
 
-    @Binds
-    fun provideRevisionRepository(impl: SharePrefsRevisionRepositoryImpl): RevisionRepository
-
     companion object {
+        @Provides
+        fun provideSharedPrefs(@AppContext appContext: Context): SharedPreferences {
+            val prefName = "RevisionPrefs"
+            return appContext.getSharedPreferences(prefName, Context.MODE_PRIVATE)
+        }
+
         @Provides
         fun provideDao(database: AppDatabase): TodoDao {
             return database.getTodoDao()
